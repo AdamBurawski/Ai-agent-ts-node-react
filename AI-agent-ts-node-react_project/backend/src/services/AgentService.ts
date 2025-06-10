@@ -20,6 +20,7 @@ import path from "path";
 import { tools } from "../config/tools";
 import { ShortestPathController } from "../controllers/graphController";
 import { ProcessImagesController } from "../controllers/imageController";
+import { KnowledgeBaseService } from "./KnowledgeBaseService";
 
 interface Tool {
   name: string;
@@ -39,6 +40,24 @@ interface ToolSelection {
 }
 
 const AVAILABLE_TOOLS: Tool[] = [
+  {
+    name: "knowledge_search",
+    description:
+      "Search through saved conversations and memories in the knowledge base. Use when user asks about previous conversations, saved memories, or wants to recall past discussions.",
+    module: "knowledge",
+    endpoint: "/api/knowledge/search",
+    keywords: [
+      "zapisane rozmowy",
+      "saved conversations",
+      "previous talks",
+      "memory",
+      "recall",
+      "baza wiedzy",
+      "knowledge base",
+      "wspomnienia",
+      "poprzednie rozmowy",
+    ],
+  },
   {
     name: "text_reader",
     description:
@@ -142,6 +161,13 @@ Return your response in JSON format:
 }`;
 
 const systemMessage = `Available tools and when to use them:
+- knowledge_search: Use for searching through saved conversations and memories in the knowledge base.
+  Use when user asks about previous conversations, saved memories, or wants to recall past discussions.
+  Parameters: query (string) - what to search for
+  Examples:
+  - "odczytaj zapisane rozmowy" -> params: { query: "rozmowy" }
+  - "co pamiętasz o kwiatach?" -> params: { query: "kwiaty" }
+  - "znajdź poprzednie rozmowy" -> params: { query: "rozmowy" }
 - text_reader: Use for reading text files from uploads directory. 
   If a specific file is mentioned, use params.filename to specify it.
   Examples: 
@@ -180,6 +206,11 @@ export class AgentService {
   private openai: OpenAI;
   private webScraper: WebScraper;
   private context: string[] = [];
+  private conversationHistory: Array<{
+    message: string;
+    role: "user" | "agent";
+    timestamp: Date;
+  }> = [];
   private openaiApiKey: string;
   private searchController: SearchController;
   private queryVectorController: QueryVectorController;
@@ -187,6 +218,7 @@ export class AgentService {
   private audioController = audioController;
   private imageController: ProcessImagesController;
   private imageChatController: ImageChatController;
+  private knowledgeBase: KnowledgeBaseService;
   private tools: Tool[] = [
     {
       name: "web_scraper",
@@ -267,6 +299,51 @@ export class AgentService {
         "update database",
       ],
     },
+    {
+      name: "knowledge_search",
+      description:
+        "Search through MY saved conversations and memories in the knowledge base",
+      module: "knowledge",
+      endpoint: "/api/knowledge/search",
+      keywords: [
+        "odczytaj zapisane",
+        "pokaż zapisane",
+        "znajdź zapisane",
+        "moje rozmowy",
+        "zapisane rozmowy",
+        "moje wspomnienia",
+        "zapisane wspomnienia",
+        "historia rozmów",
+        "baza wiedzy",
+        "knowledge base",
+        "saved conversations",
+        "my memories",
+      ],
+      parameters: {
+        query: "Search query for knowledge base",
+      },
+    },
+    {
+      name: "save_memory",
+      description:
+        "Save current conversation or specific memory to knowledge base",
+      module: "knowledge",
+      endpoint: "/api/knowledge/save",
+      keywords: [
+        "zapisz rozmowę",
+        "zapisz wspomnienie",
+        "zachowaj rozmowę",
+        "save conversation",
+        "save memory",
+        "zapisz w bazie",
+        "save to database",
+        "store conversation",
+        "store memory",
+      ],
+      parameters: {
+        content: "Content to save as memory",
+      },
+    },
   ];
 
   constructor(openaiApiKey: string) {
@@ -278,6 +355,7 @@ export class AgentService {
     this.graphController = new ShortestPathController();
     this.imageController = new ProcessImagesController();
     this.imageChatController = new ImageChatController();
+    this.knowledgeBase = new KnowledgeBaseService();
   }
 
   private async findFilesInUploads(...extensions: string[]): Promise<string[]> {
@@ -354,11 +432,45 @@ export class AgentService {
     try {
       console.log("Starting analysis for query:", query);
 
+      // Add user message to conversation history
+      this.conversationHistory.push({
+        message: query,
+        role: "user",
+        timestamp: new Date(),
+      });
+
+      // Check if user wants to save the conversation
+      if (this.shouldSaveConversation(query)) {
+        const saveResult = await this.saveConversationToKnowledge();
+        this.conversationHistory.push({
+          message: saveResult,
+          role: "agent",
+          timestamp: new Date(),
+        });
+
+        return {
+          analysis: {
+            selectedTool: "save_conversation",
+            reasoning: "User requested to save conversation",
+            plan: ["Generate conversation summary", "Store in knowledge base"],
+            parameters: {},
+          },
+          result: { message: saveResult },
+        };
+      }
+
       // Get tool selection from GPT
       const toolSelection = await this.selectTool(query);
       console.log("Tool selection result:", toolSelection);
 
       if (!toolSelection.tool) {
+        // Add agent response to conversation history for direct responses
+        this.conversationHistory.push({
+          message: toolSelection.response || "Brak odpowiedzi",
+          role: "agent",
+          timestamp: new Date(),
+        });
+
         const response = {
           analysis: {
             selectedTool: null,
@@ -367,6 +479,7 @@ export class AgentService {
             parameters: {},
           },
           result: { message: toolSelection.response },
+          finalResponse: toolSelection.response,
         };
         return response;
       }
@@ -383,6 +496,18 @@ export class AgentService {
       const finalResponse = await this.generateResponse(query, result);
       console.log("Final response:", finalResponse);
 
+      // Add agent response to conversation history
+      const responseText =
+        finalResponse ||
+        (typeof result === "string"
+          ? result
+          : result?.message || result?.content || "Wykonano akcję");
+      this.conversationHistory.push({
+        message: responseText,
+        role: "agent",
+        timestamp: new Date(),
+      });
+
       return {
         analysis: {
           selectedTool: toolSelection.tool,
@@ -391,6 +516,7 @@ export class AgentService {
           parameters: toolSelection.parameters || {},
         },
         result: result,
+        finalResponse: finalResponse,
       };
     } catch (error) {
       console.error("Error in agent analysis:", error);
@@ -400,8 +526,40 @@ export class AgentService {
 
   async selectTool(query: string): Promise<ToolSelection> {
     const systemMessage = `You are a JSON-only response tool selector. You must ALWAYS respond with valid JSON.
+
+IMPORTANT: Only use knowledge_search when user EXPLICITLY asks for SAVED/RECORDED conversations or memories from database.
+
 Available tools and when to use them:
-- text_reader: Use for reading text files from uploads directory. 
+- knowledge_search: Use ONLY when user explicitly asks for previously SAVED conversations or memories from database.
+  Use this tool ONLY for these exact phrases:
+  - "odczytaj zapisane rozmowy" / "read saved conversations"
+  - "pokaż zapisane wspomnienia" / "show saved memories"  
+  - "znajdź zapisane rozmowy" / "find saved conversations"
+  - "moje zapisane rozmowy" / "my saved conversations"
+  - "baza wiedzy" / "knowledge base" (when asking to access it)
+  - "historia rozmów" / "conversation history" (when asking for saved ones)
+  
+  DO NOT use for general questions about people, places, facts, or topics.
+  Examples of when NOT to use:
+  - "kim był Napoleon?" -> general question, use conversational response
+  - "kim był Piłsudski?" -> general question, use conversational response
+  - "co wiesz o historii?" -> general question, use conversational response
+  
+  Examples of when TO use:
+  - "odczytaj zapisane rozmowy" -> selectedTool: "knowledge_search", params: { query: "rozmowy" }
+  - "pokaż moje wspomnienia z bazy" -> selectedTool: "knowledge_search", params: { query: "wspomnienia" }
+- save_memory: Use when user explicitly asks to SAVE/STORE current conversation or memory to database.
+  Use this tool for these phrases:
+  - "zapisz rozmowę" / "save conversation"
+  - "zapisz wspomnienie" / "save memory"  
+  - "zachowaj rozmowę" / "store conversation"
+  - "zapisz w bazie wiedzy" / "save to knowledge base"
+  - "zapisz w bazie danych" / "save to database"
+  Parameters: content (optional) - specific content to save
+  Examples:
+  - "zapisz rozmowę w bazie wiedzy" -> selectedTool: "save_memory", params: {}
+  - "zapisz wspomnienie: Napoleon był cesarzem" -> selectedTool: "save_memory", params: { content: "Napoleon był cesarzem" }
+- text_reader: Use ONLY for reading .txt files from uploads directory, NOT for database queries. 
   If a specific file is mentioned, use params.filename to specify it.
   Examples: 
   - "read all text files" -> no params
@@ -503,6 +661,138 @@ OR for conversational queries:
     let controller: any;
 
     switch (toolName) {
+      case "knowledge_search":
+        try {
+          console.log("🔍 Knowledge search starting...", { params, query });
+
+          // Try simple method first - get statistics (this works)
+          const stats = await this.knowledgeBase.getStatistics();
+          console.log("📊 Database stats:", stats);
+
+          if (stats.total_memories === 0) {
+            return {
+              success: true,
+              message: "Baza wiedzy jest pusta. Brak zapisanych wspomnień.",
+              results: [],
+              stats: stats,
+            };
+          }
+
+          // Try to get some memories directly without complex search
+          try {
+            const { pool } = await import("../config/database");
+            const [rows] = await pool.execute(
+              "SELECT * FROM memories ORDER BY created_at DESC LIMIT 5"
+            );
+
+            const formattedResults = Array.isArray(rows)
+              ? rows.map((memory: any) => {
+                  let tags = [];
+                  try {
+                    if (memory.tags) {
+                      // Try to parse as JSON, if fails treat as string
+                      if (
+                        typeof memory.tags === "string" &&
+                        memory.tags.startsWith("[")
+                      ) {
+                        tags = JSON.parse(memory.tags);
+                      } else {
+                        tags = [memory.tags]; // Wrap string in array
+                      }
+                    }
+                  } catch (e) {
+                    console.warn(
+                      "Tags parsing failed, using as string:",
+                      memory.tags
+                    );
+                    tags = [memory.tags];
+                  }
+
+                  return {
+                    id: memory.id,
+                    title: memory.title,
+                    content: memory.content.substring(0, 200) + "...",
+                    category: memory.category,
+                    tags: tags,
+                    importance: memory.importance_level,
+                    created_at: memory.created_at,
+                  };
+                })
+              : [];
+
+            return {
+              success: true,
+              message: `Znaleziono ${formattedResults.length} zapisanych wspomnień:`,
+              results: formattedResults,
+              total: formattedResults.length,
+              note: "Używam prostej metody pobierania danych (wyszukiwanie zaawansowane ma problemy z parametrami)",
+            };
+          } catch (directError) {
+            console.error("Direct database access failed:", directError);
+
+            return {
+              success: true,
+              message: `W bazie danych jest ${stats.total_memories} wspomnień, ale wystąpił problem z ich odczytaniem.`,
+              results: [],
+              stats: stats,
+              error_details: directError.message,
+            };
+          }
+        } catch (error) {
+          console.error("Knowledge search error:", error);
+          return {
+            success: false,
+            error: `Błąd podczas wyszukiwania w bazie wiedzy: ${error.message}`,
+          };
+        }
+
+      case "save_memory":
+        try {
+          console.log("💾 Save memory starting...", { params, query });
+
+          // Check if user wants to save current conversation
+          if (this.conversationHistory.length > 0) {
+            const saveResult = await this.saveConversationToKnowledge();
+            return {
+              success: true,
+              message: saveResult,
+              action: "conversation_saved",
+            };
+          } else {
+            // Save specific content if provided
+            const contentToSave =
+              params.content || query || "Brak treści do zapisania";
+
+            const memory = {
+              title: `Ręczne wspomnienie: ${new Date().toLocaleDateString()}`,
+              content: contentToSave,
+              category: "manual_entry",
+              tags: ["manual", "user_input"],
+              importance_level: "medium" as const,
+              source: "manual_entry",
+              context_data: {
+                saved_at: new Date().toISOString(),
+                method: "manual",
+              },
+            };
+
+            const memoryId = await this.knowledgeBase.storeMemory(memory);
+
+            return {
+              success: true,
+              message: `Wspomnienie zostało zapisane w bazie wiedzy z ID: ${memoryId}`,
+              memory_id: memoryId,
+              action: "memory_saved",
+            };
+          }
+        } catch (error) {
+          console.error("Save memory error:", error);
+          return {
+            success: false,
+            error: `Błąd podczas zapisywania wspomnienia: ${error.message}`,
+          };
+        }
+
       case "text_reader":
         const textFiles = await this.findFilesInUploads(".txt");
         if (textFiles.length === 0) {
@@ -794,6 +1084,54 @@ OR for conversational queries:
   }
 
   private async generateResponse(query: string, toolResult: any) {
+    // Special handling for knowledge_search results
+    if (toolResult && toolResult.results && toolResult.results.length > 0) {
+      const systemContent = `You are an AI assistant that MUST answer questions based ONLY on the provided knowledge base search results. 
+
+CRITICAL INSTRUCTIONS:
+- Use ONLY information from the provided search results
+- If the search results contain the answer, use that information even if it contradicts general knowledge
+- Be specific about what information you found in the knowledge base
+- If the search results don't contain relevant information, clearly state that
+- Do NOT supplement with general knowledge unless no relevant information is found
+
+Answer the user's question based on the search results provided.`;
+
+      const searchResults = toolResult.results
+        .map(
+          (result: any) =>
+            `Memory ID: ${result.id}
+Title: ${result.title}
+Content: ${result.content}
+Category: ${result.category}
+Tags: ${JSON.stringify(result.tags)}
+Created: ${result.created_at}`
+        )
+        .join("\n\n---\n\n");
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: systemContent,
+          },
+          {
+            role: "user",
+            content: `User question: ${query}
+
+Knowledge base search results:
+${searchResults}
+
+Please answer the user's question based on these search results.`,
+          },
+        ],
+      });
+
+      return response.choices[0].message.content;
+    }
+
+    // Default response for other tools
     const response = await this.openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -961,5 +1299,249 @@ OR for conversational queries:
         error: error.message,
       };
     }
+  }
+
+  // Check if user wants to save conversation
+  private shouldSaveConversation(query: string): boolean {
+    const saveCommands = [
+      "zapisz tę rozmowę",
+      "zapisz konwersację",
+      "save this conversation",
+      "save conversation",
+      "save chat",
+      "zapisz chat",
+      "zapisz naszą rozmowę",
+      "zachowaj rozmowę",
+    ];
+
+    const lowerQuery = query.toLowerCase().trim();
+    return saveCommands.some((command) =>
+      lowerQuery.includes(command.toLowerCase())
+    );
+  }
+
+  // Save conversation to knowledge base
+  private async saveConversationToKnowledge(): Promise<string> {
+    try {
+      if (this.conversationHistory.length === 0) {
+        return "Brak konwersacji do zapisania.";
+      }
+
+      console.log(
+        "💾 Conversation history to save:",
+        this.conversationHistory.length,
+        "messages"
+      );
+      console.log("💾 Last few messages:", this.conversationHistory.slice(-3));
+
+      // Generate conversation summary using OpenAI
+      const conversationText = this.conversationHistory
+        .map(
+          (entry) =>
+            `${entry.role === "user" ? "Użytkownik" : "Agent"}: ${
+              entry.message
+            }`
+        )
+        .join("\n");
+
+      console.log(
+        "💾 Conversation text for summary:",
+        conversationText.substring(0, 200) + "..."
+      );
+
+      const summaryResponse = await this.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `Jesteś ekspertem w tworzeniu streszczeń rozmów. Przeanalizuj poniższą konwersację i stwórz zwięzłe, ale kompleksowe streszczenie, które zawiera:
+
+1. Główne tematy rozmowy
+2. Kluczowe pytania użytkownika
+3. Najważniejsze odpowiedzi i informacje
+4. Wnioski i ustalenia
+5. Ewentualne zadania do wykonania
+
+Streszczenie powinno być napisane w języku polskim i być przydatne jako przypomnienie w przyszłych rozmowach.`,
+          },
+          {
+            role: "user",
+            content: `Konwersacja do streszczenia:\n\n${conversationText}`,
+          },
+        ],
+        max_tokens: 1000,
+        temperature: 0.3,
+      });
+
+      const summary =
+        summaryResponse.choices[0]?.message?.content ||
+        "Nie udało się wygenerować streszczenia.";
+
+      // Generate title based on conversation
+      const titleResponse = await this.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content:
+              "Stwórz krótki, opisowy tytuł dla tej konwersacji (max 60 znaków). Odpowiedz tylko tytułem, bez dodatkowego tekstu.",
+          },
+          {
+            role: "user",
+            content: `Główne tematy: ${conversationText.substring(0, 500)}...`,
+          },
+        ],
+        max_tokens: 50,
+        temperature: 0.3,
+      });
+
+      const title =
+        titleResponse.choices[0]?.message?.content?.trim() ||
+        `Konwersacja z ${new Date().toLocaleDateString()}`;
+
+      // Extract topics for tags
+      const topics = this.extractTopicsFromConversation(conversationText);
+
+      // Determine importance level based on conversation length and content
+      const importanceLevel = this.determineImportanceLevel(conversationText);
+
+      // Store in knowledge base
+      const memory = {
+        title,
+        content: summary,
+        category: "conversations",
+        tags: topics,
+        importance_level: importanceLevel,
+        source: "ai_agent_chat",
+        context_data: {
+          conversation_date: new Date().toISOString(),
+          message_count: this.conversationHistory.length,
+          duration_minutes: this.calculateConversationDuration(),
+          participant_count: 2, // user + agent
+        },
+      };
+
+      const memoryId = await this.knowledgeBase.storeMemory(memory);
+
+      // Clear conversation history after saving
+      this.conversationHistory = [];
+
+      return `✅ Konwersacja została zapisana w bazie wiedzy jako wspomnienie #${memoryId}. Streszczenie: "${title}"`;
+    } catch (error) {
+      console.error("Error saving conversation to knowledge base:", error);
+      return `❌ Wystąpił błąd podczas zapisywania konwersacji: ${error.message}`;
+    }
+  }
+
+  // Extract topics from conversation for tagging
+  private extractTopicsFromConversation(conversationText: string): string[] {
+    // Simple keyword extraction - could be enhanced with NLP
+    const commonTopics = [
+      "AI",
+      "machine learning",
+      "programming",
+      "development",
+      "web development",
+      "database",
+      "API",
+      "frontend",
+      "backend",
+      "React",
+      "Node.js",
+      "TypeScript",
+      "projekt",
+      "zadanie",
+      "problem",
+      "rozwiązanie",
+      "implementacja",
+      "kod",
+      "system",
+      "aplikacja",
+      "funkcjonalność",
+      "optymalizacja",
+      "debugging",
+      "testy",
+      "deployment",
+      "dokumentacja",
+      "architektura",
+      "design",
+    ];
+
+    const foundTopics = commonTopics.filter((topic) =>
+      conversationText.toLowerCase().includes(topic.toLowerCase())
+    );
+
+    // Add up to 5 most relevant topics
+    return foundTopics.slice(0, 5);
+  }
+
+  // Determine importance level based on conversation characteristics
+  private determineImportanceLevel(
+    conversationText: string
+  ): "low" | "medium" | "high" | "critical" {
+    const textLength = conversationText.length;
+    const messageCount = this.conversationHistory.length;
+
+    // Keywords that indicate high importance
+    const highImportanceKeywords = [
+      "błąd",
+      "problem",
+      "nie działa",
+      "pomoc",
+      "urgent",
+      "ważne",
+      "deadline",
+      "produkcja",
+      "klient",
+      "bugfix",
+      "security",
+      "bezpieczeństwo",
+    ];
+
+    const criticalKeywords = [
+      "krytyczny",
+      "emergency",
+      "down",
+      "broken",
+      "data loss",
+      "security breach",
+    ];
+
+    const hasHighImportanceKeywords = highImportanceKeywords.some((keyword) =>
+      conversationText.toLowerCase().includes(keyword.toLowerCase())
+    );
+
+    const hasCriticalKeywords = criticalKeywords.some((keyword) =>
+      conversationText.toLowerCase().includes(keyword.toLowerCase())
+    );
+
+    if (hasCriticalKeywords) return "critical";
+    if (hasHighImportanceKeywords || messageCount > 10 || textLength > 2000)
+      return "high";
+    if (messageCount > 5 || textLength > 1000) return "medium";
+    return "low";
+  }
+
+  // Calculate conversation duration in minutes
+  private calculateConversationDuration(): number {
+    if (this.conversationHistory.length < 2) return 0;
+
+    const firstMessage = this.conversationHistory[0];
+    const lastMessage =
+      this.conversationHistory[this.conversationHistory.length - 1];
+
+    const durationMs =
+      lastMessage.timestamp.getTime() - firstMessage.timestamp.getTime();
+    return Math.round(durationMs / (1000 * 60)); // Convert to minutes
+  }
+
+  // Get conversation history (for debugging or advanced features)
+  public getConversationHistory() {
+    return this.conversationHistory;
+  }
+
+  // Clear conversation history manually
+  public clearConversationHistory() {
+    this.conversationHistory = [];
   }
 }

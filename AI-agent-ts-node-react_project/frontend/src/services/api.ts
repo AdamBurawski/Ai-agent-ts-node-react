@@ -9,13 +9,15 @@ export interface ApiResponse<T> {
 }
 
 export interface AgentResponse {
-  analysis: {
+  analysis?: {
     selectedTool: string;
     reasoning: string;
     plan: string[];
     parameters: Record<string, string | number | boolean>;
   };
-  result: Record<string, unknown>;
+  result?: Record<string, unknown>;
+  response?: string;
+  success?: boolean;
 }
 
 export interface ScrapingParams {
@@ -65,6 +67,39 @@ export interface Connection {
   target: string;
 }
 
+export interface Memory {
+  id?: number;
+  title: string;
+  content: string;
+  category?: string;
+  tags?: string[];
+  importance_level?: "low" | "medium" | "high" | "critical";
+  source?: string;
+  context_data?: Record<string, any>;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+export interface SearchResult extends Memory {
+  similarity_score?: number;
+  match_type?: "semantic" | "keyword" | "hybrid";
+  snippet?: string;
+}
+
+export interface SearchOptions {
+  limit?: number;
+  category?: string;
+  importance_level?: string;
+  search_type?: "semantic" | "keyword" | "hybrid";
+  similarity_threshold?: number;
+}
+
+export interface KnowledgeBaseStats {
+  total_memories: number;
+  by_category: Record<string, number>;
+  by_importance: Record<string, number>;
+}
+
 export const API_ENDPOINTS = {
   AUDIO: {
     PROCESS_FOLDER: `${BASE_URL}/audio/process-folder`,
@@ -102,6 +137,13 @@ export const API_ENDPOINTS = {
     GENERATE_SQL: `${BASE_URL}/generate-sql`,
     QUERY_DATABASE: `${BASE_URL}/query-database`,
     SUBMIT_RESULT: `${BASE_URL}/submit-result`,
+  },
+  KNOWLEDGE: {
+    MEMORIES: `${BASE_URL}/knowledge/memories`,
+    SEARCH: `${BASE_URL}/knowledge/search`,
+    CATEGORIES: `${BASE_URL}/knowledge/categories`,
+    STATISTICS: `${BASE_URL}/knowledge/statistics`,
+    BULK_IMPORT: `${BASE_URL}/knowledge/bulk-import`,
   },
 };
 
@@ -303,6 +345,71 @@ class ApiService {
     return this.makeRequest(API_ENDPOINTS.SQL.SUBMIT_RESULT, {
       method: "POST",
       body: JSON.stringify({ result }),
+    });
+  }
+
+  // Knowledge Base Services
+  async storeMemory(
+    memory: Memory
+  ): Promise<{ success: boolean; memory_id: number }> {
+    return this.makeRequest(API_ENDPOINTS.KNOWLEDGE.MEMORIES, {
+      method: "POST",
+      body: JSON.stringify(memory),
+    });
+  }
+
+  async searchMemories(
+    query: string,
+    options: SearchOptions = {}
+  ): Promise<{
+    success: boolean;
+    results: SearchResult[];
+    total: number;
+  }> {
+    return this.makeRequest(API_ENDPOINTS.KNOWLEDGE.SEARCH, {
+      method: "POST",
+      body: JSON.stringify({ query, ...options }),
+    });
+  }
+
+  async getMemory(id: number): Promise<{ success: boolean; memory: Memory }> {
+    return this.makeRequest(`${API_ENDPOINTS.KNOWLEDGE.MEMORIES}/${id}`);
+  }
+
+  async updateMemory(
+    id: number,
+    updates: Partial<Memory>
+  ): Promise<{ success: boolean }> {
+    return this.makeRequest(`${API_ENDPOINTS.KNOWLEDGE.MEMORIES}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteMemory(id: number): Promise<{ success: boolean }> {
+    return this.makeRequest(`${API_ENDPOINTS.KNOWLEDGE.MEMORIES}/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getCategories(): Promise<{ success: boolean; categories: string[] }> {
+    return this.makeRequest(API_ENDPOINTS.KNOWLEDGE.CATEGORIES);
+  }
+
+  async getKnowledgeBaseStats(): Promise<{
+    success: boolean;
+    statistics: KnowledgeBaseStats;
+  }> {
+    return this.makeRequest(API_ENDPOINTS.KNOWLEDGE.STATISTICS);
+  }
+
+  async bulkImportMemories(memories: Memory[]): Promise<{
+    success: boolean;
+    summary: { total: number; successful: number; failed: number };
+  }> {
+    return this.makeRequest(API_ENDPOINTS.KNOWLEDGE.BULK_IMPORT, {
+      method: "POST",
+      body: JSON.stringify({ memories }),
     });
   }
 }

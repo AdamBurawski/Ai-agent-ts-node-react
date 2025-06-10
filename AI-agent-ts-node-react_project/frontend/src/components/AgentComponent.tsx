@@ -20,10 +20,17 @@ const AgentComponent: React.FC = () => {
     try {
       const response = await apiService.processAgentQuery(message);
 
-      const content =
-        typeof response.result === "string"
-          ? response.result
-          : JSON.stringify(response.result, null, 2);
+      let content = "";
+      if (response.response) {
+        content = response.response;
+      } else if (response.result) {
+        content =
+          typeof response.result === "string"
+            ? response.result
+            : JSON.stringify(response.result, null, 2);
+      } else {
+        content = "Otrzymano odpowiedź bez treści.";
+      }
 
       addMessage(content, "agent", response.analysis);
     } catch (error) {
