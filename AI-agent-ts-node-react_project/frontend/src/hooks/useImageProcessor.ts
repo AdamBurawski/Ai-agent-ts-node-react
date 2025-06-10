@@ -78,10 +78,17 @@ export function useImageProcessor(): UseImageProcessorReturn {
     try {
       const result = await apiService.processImages();
       console.log("Opisy obrazów:", result.descriptions);
+
+      // Display summary message
       addMessage(
-        "Obrazy zostały przetworzone pomyślnie! Sprawdź konsolę po szczegóły.",
+        `Znaleziono i przetworzono ${result.descriptions.length} obrazów:`,
         "system"
       );
+
+      // Display each image description as separate messages
+      result.descriptions.forEach((description, index) => {
+        addMessage(description, "agent");
+      });
     } catch (error) {
       console.error("Błąd przetwarzania obrazów:", error);
       const errorMsg = "Wystąpił błąd podczas przetwarzania obrazów.";
