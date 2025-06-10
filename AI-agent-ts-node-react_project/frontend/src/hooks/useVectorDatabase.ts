@@ -9,7 +9,6 @@ interface UseVectorDatabaseReturn {
   addMessage: ReturnType<typeof useChat>["addMessage"];
   generateEmbeddings: () => Promise<void>;
   handleChatWithVectorDB: (question: string) => Promise<void>;
-  generateGraphic: (prompt?: string) => Promise<string | null>;
   clearHistory: () => void;
 }
 
@@ -70,36 +69,6 @@ export function useVectorDatabase(): UseVectorDatabaseReturn {
     [addMessage]
   );
 
-  const generateGraphic = useCallback(
-    async (
-      prompt = "Generate a graphic for my data"
-    ): Promise<string | null> => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const data = await apiService.generateGraphic(prompt);
-        addMessage("Grafika została wygenerowana pomyślnie!", "system");
-        return data.graphicData;
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message);
-          addMessage("Wystąpił błąd podczas generowania grafiki.", "system");
-        } else {
-          setError("Wystąpił nieznany błąd");
-          addMessage(
-            "Wystąpił nieznany błąd podczas generowania grafiki.",
-            "system"
-          );
-        }
-        return null;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [addMessage]
-  );
-
   return {
     loading,
     error,
@@ -107,7 +76,6 @@ export function useVectorDatabase(): UseVectorDatabaseReturn {
     addMessage,
     generateEmbeddings,
     handleChatWithVectorDB,
-    generateGraphic,
     clearHistory,
   };
 }

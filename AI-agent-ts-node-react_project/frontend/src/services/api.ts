@@ -111,12 +111,12 @@ export const API_ENDPOINTS = {
     OCR_CHAT: `${BASE_URL}/image/chat`,
     PROCESS_IMAGES: `${BASE_URL}/image/process-images`,
     UPLOAD: `${BASE_URL}/image/upload`,
+    GENERATE: `${BASE_URL}/image/generate`,
   },
   VECTOR: {
     GENERATE_EMBEDDINGS: `${BASE_URL}/vector/generate-embeddings`,
     QUERY: `${BASE_URL}/vector/query`,
     SUMMARY: `${BASE_URL}/vector/summary`,
-    GENERATE_GRAPHIC: `${BASE_URL}/vector/generate-graphic`,
   },
   GRAPH: {
     GET_CONNECTIONS: `${BASE_URL}/graph/get-connections`,
@@ -236,6 +236,15 @@ class ApiService {
     return this.makeRequest(API_ENDPOINTS.IMAGE.PROCESS_IMAGES);
   }
 
+  async generateImage(
+    prompt: string
+  ): Promise<{ message: string; filename: string; imageUrl: string }> {
+    return this.makeRequest(API_ENDPOINTS.IMAGE.GENERATE, {
+      method: "POST",
+      body: JSON.stringify({ prompt }),
+    });
+  }
+
   // Vector Services
   async generateEmbeddings(): Promise<{ embeddings: any[] }> {
     return this.makeRequest(API_ENDPOINTS.VECTOR.GENERATE_EMBEDDINGS);
@@ -252,13 +261,6 @@ class ApiService {
     return this.makeRequest(API_ENDPOINTS.VECTOR.SUMMARY, {
       method: "POST",
       body: JSON.stringify({ question }),
-    });
-  }
-
-  async generateGraphic(prompt: string): Promise<{ graphicData: string }> {
-    return this.makeRequest(API_ENDPOINTS.VECTOR.GENERATE_GRAPHIC, {
-      method: "POST",
-      body: JSON.stringify({ prompt }),
     });
   }
 

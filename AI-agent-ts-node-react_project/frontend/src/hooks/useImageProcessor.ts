@@ -11,6 +11,7 @@ interface UseImageProcessorReturn {
   handleImageUpload: (file: File) => Promise<void>;
   handleChatSubmit: (message: string) => Promise<void>;
   processImages: () => Promise<void>;
+  generateImage: (prompt: string) => Promise<void>;
   clearResults: () => void;
 }
 
@@ -99,6 +100,45 @@ export function useImageProcessor(): UseImageProcessorReturn {
     }
   }, [addMessage]);
 
+  const generateImage = useCallback(
+    async (prompt: string) => {
+      if (!prompt.trim()) {
+        setError("Prompt nie może być pusty");
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        addMessage(`Generuję obraz dla: "${prompt}"`, "user");
+        const result = await apiService.generateImage(prompt);
+
+        addMessage(`✅ ${result.message} Plik: ${result.filename}`, "system");
+
+        // Dodaj informację o wygenerowanym obrazie
+        addMessage(
+          `🎨 Obraz został wygenerowany i zapisany w folderze uploads jako ${result.filename}. Możesz teraz zadawać pytania o ten obraz lub przetwarzać wszystkie obrazy w folderze.`,
+          "agent"
+        );
+      } catch (error) {
+        console.error("Błąd generowania obrazu:", error);
+        const errorMsg =
+          error instanceof Error
+            ? error.message
+            : "Wystąpił błąd podczas generowania obrazu";
+        setError(errorMsg);
+        addMessage(
+          `❌ Nie udało się wygenerować obrazu: ${errorMsg}`,
+          "system"
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [addMessage]
+  );
+
   const clearResults = useCallback(() => {
     setOcrResult(null);
     setError(null);
@@ -114,6 +154,7 @@ export function useImageProcessor(): UseImageProcessorReturn {
     handleImageUpload,
     handleChatSubmit,
     processImages,
+    generateImage,
     clearResults,
   };
 }

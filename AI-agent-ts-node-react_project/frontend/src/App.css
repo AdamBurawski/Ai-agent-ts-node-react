@@ -49,6 +49,7 @@
   min-height: 500px;
 }
 
-.app-layout__content {
+.app-layout__content,
+.image-generator__prompt {
   color: #6c757d;
 }/*# sourceMappingURL=App.css.map */

@@ -7,6 +7,7 @@ import {
   ProcessImagesController,
   UploadImageController,
   ImageChatController,
+  GenerateImageController,
 } from "../controllers/imageController";
 
 const router = express.Router();
@@ -33,6 +34,7 @@ const ocrController = new OCRController();
 const processImagesController = new ProcessImagesController();
 const uploadController = new UploadImageController();
 const imageChatController = new ImageChatController();
+const generateImageController = new GenerateImageController();
 
 router.post("/ocr", upload.single("image"), (req, res) =>
   ocrController.execute(req, res)
@@ -43,6 +45,9 @@ router.get("/process-images", (req, res) =>
 router.post("/chat", (req, res) => imageChatController.execute(req, res));
 router.post("/upload", upload.single("image"), (req, res) =>
   uploadController.execute(req, res)
+);
+router.post("/generate", (req, res) =>
+  generateImageController.execute(req, res)
 );
 
 export default router;

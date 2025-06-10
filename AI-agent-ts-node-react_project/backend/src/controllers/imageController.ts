@@ -350,3 +350,71 @@ export class UploadImageController implements BaseController {
     }
   }
 }
+
+export class GenerateImageController implements BaseController {
+  async execute(req: Request, res: Response): Promise<void> {
+    try {
+      const { prompt } = req.body;
+
+      if (!prompt) {
+        res.status(400).json({ error: "Prompt is required." });
+        return;
+      }
+
+      console.log("Generating image with prompt:", prompt);
+
+      const response = await axios.post(
+        "https://api.openai.com/v1/images/generations",
+        {
+          model: "dall-e-3",
+          prompt: prompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "standard",
+          response_format: "url",
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${config.openai.apiKey}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const imageUrl = response.data.data[0]?.url;
+
+      if (!imageUrl) {
+        res.status(500).json({ error: "Failed to generate image" });
+        return;
+      }
+
+      // Download the image from OpenAI and save to uploads folder
+      const imageResponse = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+      });
+
+      const timestamp = Date.now();
+      const filename = `generated_image_${timestamp}.png`;
+      const filepath = path.join(IMAGE_FOLDER, filename);
+
+      await fs.promises.writeFile(filepath, imageResponse.data);
+
+      console.log(`Image saved to: ${filepath}`);
+
+      res.json({
+        message: "Obraz wygenerowany i zapisany pomyślnie!",
+        filename: filename,
+        imageUrl: imageUrl,
+      });
+    } catch (error: any) {
+      console.error(
+        "Error generating image:",
+        error.response?.data || error.message
+      );
+      res.status(500).json({
+        error: "Failed to generate image",
+        details: error.response?.data?.error?.message || error.message,
+      });
+    }
+  }
+}

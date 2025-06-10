@@ -15,7 +15,6 @@ const VectorDatabaseComponent: React.FC = () => {
     messages,
     generateEmbeddings,
     handleChatWithVectorDB,
-    generateGraphic,
     clearHistory,
   } = useVectorDatabase();
 
@@ -55,11 +54,6 @@ const VectorDatabaseComponent: React.FC = () => {
     };
   }, [graphicData]);
 
-  const handleGenerateGraphic = async () => {
-    const data = await generateGraphic();
-    setGraphicData(data);
-  };
-
   const handleClearAll = () => {
     clearHistory();
     setGraphicData(null);
@@ -81,13 +75,7 @@ const VectorDatabaseComponent: React.FC = () => {
           >
             {loading ? "Generowanie..." : "Generuj Embeddingi"}
           </button>
-          <button
-            onClick={handleGenerateGraphic}
-            disabled={loading}
-            className="btn btn--secondary"
-          >
-            {loading ? "Generowanie grafiki..." : "Generuj grafikę"}
-          </button>
+
           {(messages.length > 0 || graphicData) && (
             <button onClick={handleClearAll} className="btn btn--outline">
               Wyczyść wszystko
