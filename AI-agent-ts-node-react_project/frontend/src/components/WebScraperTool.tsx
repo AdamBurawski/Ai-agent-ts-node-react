@@ -66,7 +66,7 @@ const WebScraperTool: React.FC = () => {
             type="text"
             value={startUrl}
             onChange={(e) => setStartUrl(e.target.value)}
-            placeholder="Enter website URL to search"
+            placeholder="Enter website URL (e.g. example.com or https://example.com)"
             className="url-input"
           />
           <input

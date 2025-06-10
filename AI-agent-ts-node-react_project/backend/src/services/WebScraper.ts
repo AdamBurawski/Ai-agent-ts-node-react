@@ -98,8 +98,15 @@ export class WebScraper {
                      FOR (p:Page) REQUIRE p.url IS UNIQUE`
         )
         .catch((e) => console.log("Constraint exists:", e.message));
+    } catch (error) {
+      console.log(
+        "Neo4j connection failed, continuing without database storage:",
+        error.message
+      );
     } finally {
-      await session.close();
+      await session.close().catch(() => {
+        // Ignore session close errors if connection failed
+      });
     }
   }
 
@@ -348,8 +355,16 @@ export class WebScraper {
           { keyword, url: page.url }
         );
       }
+    } catch (error) {
+      console.log(
+        "Failed to store page in Neo4j, continuing without storage:",
+        error.message
+      );
+      // Continue execution without storing to database
     } finally {
-      await session.close();
+      await session.close().catch(() => {
+        // Ignore session close errors if connection failed
+      });
     }
   }
 

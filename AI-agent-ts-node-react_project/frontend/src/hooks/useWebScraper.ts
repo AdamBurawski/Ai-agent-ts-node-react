@@ -4,6 +4,7 @@ import {
   ScrapingParams,
   ScrapingResult,
   CrawlStatus,
+  ApiError,
 } from "../services/api";
 
 interface UseWebScraperReturn {
@@ -90,12 +91,20 @@ export function useWebScraper(): UseWebScraperReturn {
         ]);
         setSuccess("Found an answer!");
       } else {
+        // Handle case where backend returns success: false (no results found)
         setResults([]);
         setSuccess("No answer found in the scanned pages.");
       }
     } catch (error) {
       console.error("Error:", error);
-      setError("Failed to search website");
+      // Check if this is an API error with specific message
+      if (error instanceof ApiError) {
+        setError(`API Error: ${error.message}`);
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to search website");
+      }
       setResults([]);
     } finally {
       setLoading(false);

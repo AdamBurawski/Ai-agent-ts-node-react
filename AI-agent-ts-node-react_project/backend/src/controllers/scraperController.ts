@@ -31,9 +31,18 @@ export class CrawlController implements BaseController {
       return;
     }
 
+    // Normalize URL - add https:// if no protocol is provided
+    let normalizedUrl = startUrl.trim();
+    if (
+      !normalizedUrl.startsWith("http://") &&
+      !normalizedUrl.startsWith("https://")
+    ) {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
+
     try {
       // Start crawling in the background
-      scraper.scrapeWebsite(startUrl, maxPages).catch((error) => {
+      scraper.scrapeWebsite(normalizedUrl, maxPages).catch((error) => {
         console.error("Error during crawling:", error);
       });
 
@@ -97,9 +106,18 @@ export class SearchController implements BaseController {
       return;
     }
 
+    // Normalize URL - add https:// if no protocol is provided
+    let normalizedUrl = startUrl.trim();
+    if (
+      !normalizedUrl.startsWith("http://") &&
+      !normalizedUrl.startsWith("https://")
+    ) {
+      normalizedUrl = `https://${normalizedUrl}`;
+    }
+
     try {
       const result = await scraper.scrapeWebsiteWithQuestion(
-        startUrl,
+        normalizedUrl,
         question,
         maxPages
       );

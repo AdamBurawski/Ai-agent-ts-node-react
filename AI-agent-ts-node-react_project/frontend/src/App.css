@@ -47,4 +47,8 @@
 }
 .graph-component__container .vis-network canvas {
   min-height: 500px;
+}
+
+.app-layout__content {
+  color: #6c757d;
 }/*# sourceMappingURL=App.css.map */
