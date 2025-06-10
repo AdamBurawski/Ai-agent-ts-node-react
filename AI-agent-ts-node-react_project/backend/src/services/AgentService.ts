@@ -711,7 +711,7 @@ OR for conversational queries:
                   return {
                     id: memory.id,
                     title: memory.title,
-                    content: memory.content.substring(0, 200) + "...",
+                    content: memory.content, // Return full content instead of truncated
                     category: memory.category,
                     tags: tags,
                     importance: memory.importance_level,
@@ -1350,48 +1350,20 @@ Please answer the user's question based on these search results.`,
       );
       console.log("💾 Last few messages:", this.conversationHistory.slice(-3));
 
-      // Generate conversation summary using OpenAI
-      const conversationText = this.conversationHistory
-        .map(
-          (entry) =>
-            `${entry.role === "user" ? "Użytkownik" : "Agent"}: ${
-              entry.message
-            }`
-        )
-        .join("\n");
+      // Generate FULL conversation text with timestamps and metadata
+      const fullConversationText = this.conversationHistory
+        .map((entry, index) => {
+          const timestamp = entry.timestamp.toLocaleString("pl-PL");
+          const speaker = entry.role === "user" ? "👤 Użytkownik" : "🤖 Agent";
+          return `[${timestamp}] ${speaker}: ${entry.message}`;
+        })
+        .join("\n\n");
 
       console.log(
-        "💾 Conversation text for summary:",
-        conversationText.substring(0, 200) + "..."
+        "💾 Full conversation text length:",
+        fullConversationText.length,
+        "characters"
       );
-
-      const summaryResponse = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `Jesteś ekspertem w tworzeniu streszczeń rozmów. Przeanalizuj poniższą konwersację i stwórz zwięzłe, ale kompleksowe streszczenie, które zawiera:
-
-1. Główne tematy rozmowy
-2. Kluczowe pytania użytkownika
-3. Najważniejsze odpowiedzi i informacje
-4. Wnioski i ustalenia
-5. Ewentualne zadania do wykonania
-
-Streszczenie powinno być napisane w języku polskim i być przydatne jako przypomnienie w przyszłych rozmowach.`,
-          },
-          {
-            role: "user",
-            content: `Konwersacja do streszczenia:\n\n${conversationText}`,
-          },
-        ],
-        max_tokens: 1000,
-        temperature: 0.3,
-      });
-
-      const summary =
-        summaryResponse.choices[0]?.message?.content ||
-        "Nie udało się wygenerować streszczenia.";
 
       // Generate title based on conversation
       const titleResponse = await this.openai.chat.completions.create({
@@ -1404,7 +1376,10 @@ Streszczenie powinno być napisane w języku polskim i być przydatne jako przyp
           },
           {
             role: "user",
-            content: `Główne tematy: ${conversationText.substring(0, 500)}...`,
+            content: `Główne tematy: ${fullConversationText.substring(
+              0,
+              500
+            )}...`,
           },
         ],
         max_tokens: 50,
@@ -1413,27 +1388,35 @@ Streszczenie powinno być napisane w języku polskim i być przydatne jako przyp
 
       const title =
         titleResponse.choices[0]?.message?.content?.trim() ||
-        `Konwersacja z ${new Date().toLocaleDateString()}`;
+        `Pełna konwersacja z ${new Date().toLocaleDateString()}`;
 
       // Extract topics for tags
-      const topics = this.extractTopicsFromConversation(conversationText);
+      const topics = this.extractTopicsFromConversation(fullConversationText);
 
       // Determine importance level based on conversation length and content
-      const importanceLevel = this.determineImportanceLevel(conversationText);
+      const importanceLevel =
+        this.determineImportanceLevel(fullConversationText);
 
-      // Store in knowledge base
+      // Store FULL conversation in knowledge base (not summary!)
       const memory = {
         title,
-        content: summary,
-        category: "conversations",
-        tags: topics,
+        content: fullConversationText, // FULL conversation instead of summary
+        category: "full_conversations",
+        tags: [...topics, "pełna_rozmowa", "kompletna_transkrypcja"],
         importance_level: importanceLevel,
-        source: "ai_agent_chat",
+        source: "ai_agent_chat_full",
         context_data: {
           conversation_date: new Date().toISOString(),
           message_count: this.conversationHistory.length,
           duration_minutes: this.calculateConversationDuration(),
           participant_count: 2, // user + agent
+          conversation_type: "full_transcript",
+          start_time: this.conversationHistory[0]?.timestamp.toISOString(),
+          end_time:
+            this.conversationHistory[
+              this.conversationHistory.length - 1
+            ]?.timestamp.toISOString(),
+          character_count: fullConversationText.length,
         },
       };
 
@@ -1442,7 +1425,7 @@ Streszczenie powinno być napisane w języku polskim i być przydatne jako przyp
       // Clear conversation history after saving
       this.conversationHistory = [];
 
-      return `✅ Konwersacja została zapisana w bazie wiedzy jako wspomnienie #${memoryId}. Streszczenie: "${title}"`;
+      return `✅ Pełna konwersacja została zapisana w bazie wiedzy jako wspomnienie #${memoryId}. Tytuł: "${title}". Zapisano ${memory.context_data.message_count} wiadomości (${memory.context_data.character_count} znaków) wraz z wektorami embeddingów.`;
     } catch (error) {
       console.error("Error saving conversation to knowledge base:", error);
       return `❌ Wystąpił błąd podczas zapisywania konwersacji: ${error.message}`;
