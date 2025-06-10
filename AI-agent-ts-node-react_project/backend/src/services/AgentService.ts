@@ -474,6 +474,7 @@ OR for conversational queries:
           tool: parsedResponse.selectedTool,
           parameters: parsedResponse.parameters,
           reasoning: parsedResponse.reasoning,
+          response: parsedResponse.response,
         };
       } catch (parseError) {
         console.error("Failed to parse OpenAI response:", content);
