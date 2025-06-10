@@ -1,0 +1,37 @@
+.alert {
+  position: relative;
+  width: 100%;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+
+  &-default {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #212529;
+  }
+
+  &-destructive {
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+    color: #842029;
+  }
+
+  svg {
+    position: absolute;
+    left: 1rem;
+    top: 1rem;
+  }
+
+  &-title {
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  &-description {
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+}

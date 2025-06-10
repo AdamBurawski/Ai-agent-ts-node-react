@@ -1,0 +1,244 @@
+.scraper-tool {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .scraper-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+  }
+
+  .scraper-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+  }
+
+  .input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+
+    .url-input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #dee2e6;
+      border-radius: 0.25rem;
+
+      &:focus {
+        outline: none;
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      }
+    }
+
+    .crawl-button {
+      padding: 0.5rem 1rem;
+      background-color: #0d6efd;
+      color: white;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #0b5ed7;
+      }
+
+      &:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+
+      .loading-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
+      }
+    }
+  }
+
+  .status-container {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+
+    .status-title {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 0.5rem;
+      background-color: #e9ecef;
+      border-radius: 1rem;
+      overflow: hidden;
+
+      .progress-bar {
+        height: 100%;
+        background-color: #0d6efd;
+        transition: width 0.5s ease;
+      }
+    }
+
+    .status-info {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      color: #6c757d;
+
+      .current-url {
+        margin-top: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.stop-button {
+  @extend .crawl-button;
+  background-color: #dc3545;
+  margin-left: 0.5rem;
+
+  &:hover {
+    background-color: #bb2d3b;
+  }
+
+  &:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+  }
+}
+
+.scraper-tool {
+  padding: 1.5rem;
+
+  .input-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+
+    .url-input,
+    .question-input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #dee2e6;
+      border-radius: 0.25rem;
+
+      &:focus {
+        outline: none;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+      }
+    }
+  }
+
+  .search-button {
+    padding: 0.5rem 1rem;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #0b5ed7;
+    }
+
+    &:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+    }
+  }
+
+  .stop-button {
+    padding: 0.5rem 1rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #bb2d3b;
+    }
+  }
+
+  .result-card {
+    background-color: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+
+    .result-answer {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: #f8f9fa;
+      border-radius: 0.5rem;
+      border: 1px solid #dee2e6;
+
+      h5 {
+        margin: 0 0 0.5rem 0;
+        color: #495057;
+        font-weight: 600;
+      }
+
+      .answer-text {
+        margin: 0;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        color: #212529;
+      }
+      p {
+        margin: 0;
+        line-height: 1.5;
+        color: purple;
+      }
+    }
+  }
+
+  .loading-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
