@@ -227,14 +227,17 @@ export class OCRController implements BaseController {
           file.endsWith(".bmp")
       );
 
-      // Remove existing images (but NOT the temp uploaded file)
+      // Remove existing images (but NOT the temp uploaded file or generated images)
       for (const file of existingImages) {
         try {
           const filePath = path.join(IMAGE_FOLDER, file);
           // Don't remove the currently uploaded file if it was saved to uploads folder
-          if (filePath !== imagePath) {
+          // Also don't remove generated images (they start with "generated_image_")
+          if (filePath !== imagePath && !file.startsWith("generated_image_")) {
             await fs.promises.unlink(filePath);
             console.log(`Removed old image: ${file}`);
+          } else if (file.startsWith("generated_image_")) {
+            console.log(`Preserving generated image: ${file}`);
           }
         } catch (error) {
           console.warn(`Failed to remove old image ${file}:`, error);
