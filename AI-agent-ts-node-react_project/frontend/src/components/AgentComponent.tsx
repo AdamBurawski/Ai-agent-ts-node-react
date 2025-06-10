@@ -74,9 +74,9 @@ const AgentComponent: React.FC = () => {
     formData.append("image", file);
 
     try {
-      await apiService.uploadImageForAgent(formData);
+      const result = await apiService.uploadImage(formData);
       addMessage(
-        "Image uploaded successfully! You can now ask questions about it.",
+        `Image uploaded and analyzed successfully! Extracted text: "${result.text}". You can now ask questions about this image.`,
         "system"
       );
     } catch (error) {
