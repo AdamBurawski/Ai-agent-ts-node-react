@@ -17,7 +17,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ activeTab, onTabChange }) => {
   const tabs = [
-    { id: "audio" as TabType, label: "Audio", icon: "🎵" },
+    { id: "audio" as TabType, label: "Audio/Tekst", icon: "🎵✏️" },
     { id: "image" as TabType, label: "Obrazy", icon: "🖼️" },
     { id: "vector" as TabType, label: "Baza Wektorowa", icon: "🔍" },
     { id: "graph" as TabType, label: "Graf", icon: "🕸️" },

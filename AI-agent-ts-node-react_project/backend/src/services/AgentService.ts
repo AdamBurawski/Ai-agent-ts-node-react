@@ -799,8 +799,24 @@ OR for conversational queries:
           throw new Error("No text files found in uploads directory");
         }
 
+        // Use specified filename from params, or default to first file
+        let targetFilename = params.filename;
+        if (targetFilename) {
+          // Check if the specified file exists
+          if (!textFiles.includes(targetFilename)) {
+            throw new Error(
+              `File '${targetFilename}' not found in uploads directory. Available files: ${textFiles.join(
+                ", "
+              )}`
+            );
+          }
+        } else {
+          // No filename specified, use first available file
+          targetFilename = textFiles[0];
+        }
+
         const textReq = {
-          body: { filename: textFiles[0] },
+          body: { filename: targetFilename },
         };
 
         let textResult;
