@@ -1,0 +1,209 @@
+.image-processor {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  &__header {
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__error {
+    padding: 16px 20px;
+    background: #fee2e2;
+    border-left: 4px solid #f87171;
+    color: #b91c1c;
+
+    p {
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+
+  &__content {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+  }
+
+  &__main {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  &__info {
+    flex: 1;
+    max-width: 300px;
+    min-width: 250px;
+  }
+}
+
+.ocr-result {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+
+  h3 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  &__content {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    line-height: 1.6;
+    color: #555;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
+.image-chat {
+  height: 400px;
+  max-height: none;
+}
+
+.info-card {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+
+    li {
+      margin: 4px 0;
+      color: #555;
+      line-height: 1.4;
+    }
+  }
+
+  p {
+    margin: 0;
+    color: #555;
+    line-height: 1.4;
+  }
+}
+
+// Button styles (reusing from AudioProcessor)
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: #007bff;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #0056b3;
+    }
+  }
+
+  &--secondary {
+    background: #6c757d;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #545b62;
+    }
+  }
+
+  &--outline {
+    background: transparent;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+
+    &:hover:not(:disabled) {
+      background: #dc3545;
+      color: white;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 992px) {
+  .image-processor {
+    &__content {
+      flex-direction: column;
+    }
+
+    &__info {
+      max-width: none;
+      min-width: auto;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .image-processor {
+    &__header {
+      padding: 16px;
+
+      h2 {
+        font-size: 20px;
+        margin-bottom: 12px;
+      }
+    }
+
+    &__actions {
+      gap: 8px;
+    }
+
+    &__content {
+      padding: 16px;
+      gap: 16px;
+    }
+  }
+
+  .image-chat {
+    height: 300px;
+  }
+
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}

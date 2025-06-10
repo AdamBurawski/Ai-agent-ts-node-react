@@ -6,40 +6,27 @@ interface GraphComponentProps {
     nodes: { id: string; label: string }[];
     edges: { from: string; to: string }[];
   };
+  onCreateGraph?: () => Promise<void>;
+  showCreateButton?: boolean;
 }
 
-const handleCreateGraph = async () => {
-  try {
-    // Updated endpoint to match our API structure
-    const response = await fetch(
-      "http://localhost:3001/api/graph/import-data",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Error: ${response.status}`);
-    }
-
-    const result = await response.json(); // Changed to json() since we're returning JSON now
-    alert(result.message); // Display the message from our response
-    console.log(result);
-  } catch (error) {
-    console.error("Error creating graph:", error);
-    alert("Failed to create graph. Check the console for details.");
-  }
-};
-
-const GraphComponent: React.FC<GraphComponentProps> = ({ data }) => {
+const GraphComponent: React.FC<GraphComponentProps> = ({
+  data,
+  onCreateGraph,
+  showCreateButton = true,
+}) => {
   const graphRef = useRef<HTMLDivElement | null>(null);
+  const networkRef = useRef<Network | null>(null);
 
   useEffect(() => {
     if (graphRef.current) {
-      const network = new Network(graphRef.current, data, {
+      // Destroy previous network instance
+      if (networkRef.current) {
+        networkRef.current.destroy();
+      }
+
+      // Create new network
+      networkRef.current = new Network(graphRef.current, data, {
         nodes: {
           shape: "dot",
           size: 20,
@@ -48,39 +35,73 @@ const GraphComponent: React.FC<GraphComponentProps> = ({ data }) => {
             color: "#000",
           },
           borderWidth: 2,
+          color: {
+            background: "#007bff",
+            border: "#0056b3",
+            highlight: {
+              background: "#0056b3",
+              border: "#004085",
+            },
+          },
         },
         edges: {
           width: 2,
-          color: { inherit: "from" },
-          smooth: true,
+          color: { color: "#666", highlight: "#007bff" },
+          smooth: {
+            type: "continuous",
+            roundness: 0.5,
+          },
         },
         physics: {
           enabled: true,
+          stabilization: { iterations: 100 },
+          barnesHut: {
+            gravitationalConstant: -2000,
+            centralGravity: 0.3,
+            springLength: 95,
+            springConstant: 0.04,
+            damping: 0.09,
+          },
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 200,
         },
       });
 
-      return () => network.destroy(); // Cleanup on unmount
+      return () => {
+        if (networkRef.current) {
+          networkRef.current.destroy();
+          networkRef.current = null;
+        }
+      };
     }
   }, [data]);
 
+  const handleCreateGraphClick = async () => {
+    if (onCreateGraph) {
+      try {
+        await onCreateGraph();
+      } catch (error) {
+        console.error("Error creating graph:", error);
+      }
+    }
+  };
+
   return (
-    <div>
-      <div ref={graphRef} style={{ width: "100%", height: "500px" }} />
-      <div style={{ marginBottom: "20px" }}>
-        <button
-          onClick={handleCreateGraph}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#28a745",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          Create Graph in Neo4j
-        </button>
-      </div>
+    <div className="graph-component">
+      <div ref={graphRef} className="graph-component__container" />
+
+      {showCreateButton && onCreateGraph && (
+        <div className="graph-component__actions">
+          <button
+            onClick={handleCreateGraphClick}
+            className="graph-component__create-btn"
+          >
+            Utwórz graf w Neo4j
+          </button>
+        </div>
+      )}
     </div>
   );
 };

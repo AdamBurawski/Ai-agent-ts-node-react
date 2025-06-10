@@ -1,0 +1,190 @@
+.audio-processor {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  &__header {
+    padding: 20px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+
+    h2 {
+      margin: 0 0 16px 0;
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__error {
+    padding: 16px 20px;
+    background: #fee2e2;
+    border-left: 4px solid #f87171;
+    color: #b91c1c;
+
+    p {
+      margin: 0;
+      font-weight: 500;
+    }
+  }
+
+  &__section {
+    padding: 24px 20px;
+    border-bottom: 1px solid #f0f0f0;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    h3 {
+      margin: 0 0 16px 0;
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  &__empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: #666;
+    font-style: italic;
+  }
+}
+
+.transcription-list,
+.text-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.transcription-item,
+.text-file-item {
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px;
+
+  &__header {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #666;
+
+    strong {
+      color: #333;
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 18px;
+      color: #333;
+    }
+  }
+
+  &__content {
+    line-height: 1.6;
+    color: #555;
+
+    strong {
+      color: #333;
+    }
+
+    p {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+  }
+}
+
+// Button styles
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: #007bff;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #0056b3;
+    }
+  }
+
+  &--secondary {
+    background: #6c757d;
+    color: white;
+
+    &:hover:not(:disabled) {
+      background: #545b62;
+    }
+  }
+
+  &--outline {
+    background: transparent;
+    border: 2px solid #dc3545;
+    color: #dc3545;
+
+    &:hover:not(:disabled) {
+      background: #dc3545;
+      color: white;
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .audio-processor {
+    &__header {
+      padding: 16px;
+
+      h2 {
+        font-size: 20px;
+        margin-bottom: 12px;
+      }
+    }
+
+    &__actions {
+      gap: 8px;
+    }
+
+    &__section {
+      padding: 20px 16px;
+
+      h3 {
+        font-size: 18px;
+      }
+    }
+  }
+
+  .transcription-item,
+  .text-file-item {
+    padding: 12px;
+
+    &__header h4 {
+      font-size: 16px;
+    }
+  }
+
+  .btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
