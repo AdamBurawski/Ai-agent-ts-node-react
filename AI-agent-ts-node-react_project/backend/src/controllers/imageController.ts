@@ -231,13 +231,27 @@ export class OCRController implements BaseController {
       for (const file of existingImages) {
         try {
           const filePath = path.join(IMAGE_FOLDER, file);
-          // Don't remove the currently uploaded file if it was saved to uploads folder
-          // Also don't remove generated images (they start with "generated_image_")
-          if (filePath !== imagePath && !file.startsWith("generated_image_")) {
+          const currentUploadedFileName = path.basename(imagePath);
+
+          // Don't remove:
+          // 1. The currently uploaded file (by comparing file names)
+          // 2. Generated images (they start with "generated_image_")
+          // 3. Previously uploaded image for chat (uploaded_image.*)
+          if (
+            file !== currentUploadedFileName &&
+            !file.startsWith("generated_image_") &&
+            !file.startsWith("uploaded_image")
+          ) {
             await fs.promises.unlink(filePath);
             console.log(`Removed old image: ${file}`);
           } else if (file.startsWith("generated_image_")) {
             console.log(`Preserving generated image: ${file}`);
+          } else if (file === currentUploadedFileName) {
+            console.log(`Preserving currently uploaded file: ${file}`);
+          } else if (file.startsWith("uploaded_image")) {
+            console.log(`Will replace uploaded_image with new one: ${file}`);
+            // This one will be replaced, so we can remove it
+            await fs.promises.unlink(filePath);
           }
         } catch (error) {
           console.warn(`Failed to remove old image ${file}:`, error);
