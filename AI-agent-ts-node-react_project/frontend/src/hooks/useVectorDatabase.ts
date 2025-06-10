@@ -9,7 +9,6 @@ interface UseVectorDatabaseReturn {
   addMessage: ReturnType<typeof useChat>["addMessage"];
   generateEmbeddings: () => Promise<void>;
   handleChatWithVectorDB: (question: string) => Promise<void>;
-  handleSummaryRequest: (question: string) => Promise<void>;
   generateGraphic: (prompt?: string) => Promise<string | null>;
   clearHistory: () => void;
 }
@@ -71,26 +70,6 @@ export function useVectorDatabase(): UseVectorDatabaseReturn {
     [addMessage]
   );
 
-  const handleSummaryRequest = useCallback(
-    async (summaryQuestion: string) => {
-      if (!summaryQuestion.trim()) return;
-
-      addMessage(summaryQuestion, "user");
-
-      try {
-        const result = await apiService.getSummary(summaryQuestion);
-        addMessage(result.summary, "agent");
-      } catch (error) {
-        console.error("Błąd podczas żądania podsumowania:", error);
-        addMessage(
-          "Wystąpił błąd podczas przetwarzania żądania podsumowania.",
-          "system"
-        );
-      }
-    },
-    [addMessage]
-  );
-
   const generateGraphic = useCallback(
     async (
       prompt = "Generate a graphic for my data"
@@ -128,7 +107,6 @@ export function useVectorDatabase(): UseVectorDatabaseReturn {
     addMessage,
     generateEmbeddings,
     handleChatWithVectorDB,
-    handleSummaryRequest,
     generateGraphic,
     clearHistory,
   };

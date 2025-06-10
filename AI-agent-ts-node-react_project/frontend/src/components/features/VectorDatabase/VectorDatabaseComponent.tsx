@@ -15,7 +15,6 @@ const VectorDatabaseComponent: React.FC = () => {
     messages,
     generateEmbeddings,
     handleChatWithVectorDB,
-    handleSummaryRequest,
     generateGraphic,
     clearHistory,
   } = useVectorDatabase();
@@ -117,32 +116,12 @@ const VectorDatabaseComponent: React.FC = () => {
           <div className="chat-sections">
             <div className="chat-section">
               <ChatInterface
-                messages={messages.filter(
-                  (msg) =>
-                    !msg.content.includes("podsumowanie") &&
-                    !msg.content.includes("summary")
-                )}
+                messages={messages}
                 onSendMessage={handleChatWithVectorDB}
                 loading={loading}
                 title="Czat z Bazą Wektorową"
                 placeholder="Zadaj pytanie bazie wektorowej..."
                 className="vector-chat"
-              />
-            </div>
-
-            <div className="chat-section">
-              <ChatInterface
-                messages={messages.filter(
-                  (msg) =>
-                    msg.content.includes("podsumowanie") ||
-                    msg.content.includes("summary") ||
-                    msg.type === "system"
-                )}
-                onSendMessage={handleSummaryRequest}
-                loading={loading}
-                title="Żądania Podsumowania"
-                placeholder="Wpisz pytanie do podsumowania..."
-                className="summary-chat"
               />
             </div>
           </div>
@@ -163,11 +142,6 @@ const VectorDatabaseComponent: React.FC = () => {
               Zadawaj pytania używając wyszukiwania semantycznego w bazie
               wektorowej.
             </p>
-          </div>
-
-          <div className="info-card">
-            <h4>Podsumowania</h4>
-            <p>Generuj podsumowania na podstawie zawartości bazy danych.</p>
           </div>
 
           <div className="info-card">
