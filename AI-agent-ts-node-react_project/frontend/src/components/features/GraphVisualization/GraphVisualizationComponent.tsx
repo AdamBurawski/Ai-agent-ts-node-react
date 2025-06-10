@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useGraphData } from "../../../hooks/useGraphData";
-import GraphComponent from "../../GraphComponent";
+import GraphComponent from "../../../GraphComponent";
 import "./GraphVisualizationComponent.scss";
 
 const GraphVisualizationComponent: React.FC = () => {

@@ -1,0 +1,42 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f5f7fa;
+
+  &__navigation {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  &__content {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  &__container {
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .app-layout {
+    &__content {
+      padding: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .app-layout {
+    &__content {
+      padding: 12px;
+    }
+  }
+}
