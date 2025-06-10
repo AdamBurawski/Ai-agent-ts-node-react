@@ -48,6 +48,7 @@ const GraphComponent: React.FC<GraphComponentProps> = ({
           width: 2,
           color: { color: "#666", highlight: "#007bff" },
           smooth: {
+            enabled: true,
             type: "continuous",
             roundness: 0.5,
           },

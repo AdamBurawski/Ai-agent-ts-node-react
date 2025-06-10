@@ -1,0 +1,303 @@
+.sql-query {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.sql-query__header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f1f5f9;
+}
+.sql-query__title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1e293b;
+}
+.sql-query__icon {
+  font-size: 32px;
+}
+.sql-query__description {
+  margin: 0;
+  color: #64748b;
+  font-size: 16px;
+}
+.sql-query__error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+.sql-query__error-icon {
+  font-size: 18px;
+}
+.sql-query__actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.sql-query__button {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+.sql-query__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.sql-query__button--primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+.sql-query__button--primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+}
+.sql-query__button--secondary {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.sql-query__button--secondary:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.sql-query__button--outline {
+  background: transparent;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+.sql-query__button--outline:hover:not(:disabled) {
+  background: #f8fafc;
+  color: #475569;
+}
+.sql-query__button--success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+.sql-query__button--success:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+.sql-query__button--small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.sql-query__form {
+  margin-bottom: 32px;
+}
+.sql-query__input-group {
+  margin-bottom: 24px;
+}
+.sql-query__label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+}
+.sql-query__input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.sql-query__textarea {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+.sql-query__textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.sql-query__textarea::-moz-placeholder {
+  color: #9ca3af;
+}
+.sql-query__textarea::placeholder {
+  color: #9ca3af;
+}
+.sql-query__section {
+  margin-bottom: 32px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+.sql-query__section-title {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.sql-query__code-block {
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+.sql-query__code-block pre {
+  margin: 0;
+}
+.sql-query__code-block pre code {
+  color: #e2e8f0;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.sql-query__result {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+.sql-query__table {
+  overflow-x: auto;
+}
+.sql-query__table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.sql-query__table table th,
+.sql-query__table table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sql-query__table table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #374151;
+}
+.sql-query__table table tr:hover {
+  background: #f8fafc;
+}
+.sql-query__tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.sql-query__table-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+.sql-query__table-item:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+.sql-query__table-name {
+  font-weight: 500;
+  color: #374151;
+}
+.sql-query__table-details {
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+}
+.sql-query__table-details pre {
+  margin: 0;
+  color: #e2e8f0;
+  font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.sql-query__loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 20px 32px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+}
+.sql-query__loading span {
+  font-weight: 500;
+  color: #374151;
+}
+.sql-query__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 768px) {
+  .sql-query {
+    padding: 16px;
+  }
+  .sql-query__input-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sql-query__button {
+    width: 100%;
+    justify-content: center;
+  }
+  .sql-query__actions {
+    flex-direction: column;
+  }
+  .sql-query__tables {
+    grid-template-columns: 1fr;
+  }
+  .sql-query__table-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+}
+@media (max-width: 480px) {
+  .sql-query__title {
+    font-size: 24px;
+  }
+  .sql-query__description {
+    font-size: 14px;
+  }
+}/*# sourceMappingURL=SQLQueryComponent.css.map */

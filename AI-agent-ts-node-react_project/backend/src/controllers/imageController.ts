@@ -6,7 +6,7 @@ import path from "path";
 import config from "../config/config";
 import OpenAI from "openai";
 
-const IMAGE_FOLDER = '/Volumes/Samsung HD/AI/AI-APP-PROJECT/AI_Devs_3-Quests/S05E01(Agent)/backend/uploads';
+const IMAGE_FOLDER = path.join(__dirname, "../../uploads");
 
 // Create images folder if it doesn't exist
 if (!fs.existsSync(IMAGE_FOLDER)) {
@@ -18,14 +18,16 @@ let chatContext: string = ""; // Store chat context
 
 interface Message {
   role: "system" | "user" | "assistant";
-  content: string | Array<{
-    type: "text" | "image_url";
-    text?: string;
-    image_url?: {
-      url: string;
-      detail: "low" | "high";
-    };
-  }>;
+  content:
+    | string
+    | Array<{
+        type: "text" | "image_url";
+        text?: string;
+        image_url?: {
+          url: string;
+          detail: "low" | "high";
+        };
+      }>;
 }
 
 export class ImageChatController implements BaseController {
@@ -35,11 +37,12 @@ export class ImageChatController implements BaseController {
     try {
       // Najpierw odczytaj wszystkie obrazki z folderu
       const files = await fs.promises.readdir(IMAGE_FOLDER);
-      const imageFiles = files.filter(file => 
-        file.endsWith('.jpg') || 
-        file.endsWith('.jpeg') || 
-        file.endsWith('.png') || 
-        file.endsWith('.webp')
+      const imageFiles = files.filter(
+        (file) =>
+          file.endsWith(".jpg") ||
+          file.endsWith(".jpeg") ||
+          file.endsWith(".png") ||
+          file.endsWith(".webp")
       );
 
       if (imageFiles.length === 0) {
@@ -51,15 +54,15 @@ export class ImageChatController implements BaseController {
       const messages: Message[] = [
         {
           role: "system",
-          content: "You are a helpful assistant that analyzes images."
-        }
+          content: "You are a helpful assistant that analyzes images.",
+        },
       ];
 
       // Dodaj każdy obrazek do kontekstu
       for (const file of imageFiles) {
         const imagePath = path.join(IMAGE_FOLDER, file);
-        const imageBase64 = fs.readFileSync(imagePath, { encoding: 'base64' });
-        
+        const imageBase64 = fs.readFileSync(imagePath, { encoding: "base64" });
+
         messages.push({
           role: "user",
           content: [
@@ -67,14 +70,14 @@ export class ImageChatController implements BaseController {
               type: "image_url",
               image_url: {
                 url: `data:image/jpeg;base64,${imageBase64}`,
-                detail: "high"
-              }
+                detail: "high",
+              },
             },
             {
               type: "text",
-              text: message || "Describe what you see in this image."
-            }
-          ]
+              text: message || "Describe what you see in this image.",
+            },
+          ],
         });
       }
 
@@ -93,10 +96,14 @@ export class ImageChatController implements BaseController {
         }
       );
 
-      const reply = response.data.choices[0]?.message?.content || "No reply received.";
+      const reply =
+        response.data.choices[0]?.message?.content || "No reply received.";
       res.status(200).json({ reply });
     } catch (error: any) {
-      console.error("Error processing chat:", error.response?.data || error.message);
+      console.error(
+        "Error processing chat:",
+        error.response?.data || error.message
+      );
       res.status(500).json({
         error: "Failed to process chat request.",
         details: error.response?.data || error.message,
@@ -225,24 +232,24 @@ export class UploadImageController implements BaseController {
 
     // Używamy tej samej ścieżki co w routerze
     const uploadDir = IMAGE_FOLDER;
-    console.log('Controller upload path:', uploadDir);
-    console.log('Original file path:', req.file.path);
+    console.log("Controller upload path:", uploadDir);
+    console.log("Original file path:", req.file.path);
 
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
     const newPath = path.join(uploadDir, req.file.originalname);
-    console.log('New file path:', newPath);
-    
+    console.log("New file path:", newPath);
+
     try {
       fs.renameSync(req.file.path, newPath);
-      res.status(200).json({ 
+      res.status(200).json({
         message: "Image uploaded successfully",
-        path: newPath 
+        path: newPath,
       });
     } catch (error) {
-      console.error('Error moving file:', error);
+      console.error("Error moving file:", error);
       res.status(500).json({ error: "Failed to save image" });
     }
   }

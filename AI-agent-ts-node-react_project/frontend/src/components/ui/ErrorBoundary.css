@@ -1,0 +1,118 @@
+.error-boundary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+}
+.error-boundary__container {
+  max-width: 600px;
+  text-align: center;
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(220, 38, 38, 0.1);
+  border: 1px solid #fecaca;
+}
+.error-boundary__icon {
+  font-size: 64px;
+  margin-bottom: 24px;
+}
+.error-boundary__title {
+  margin: 0 0 16px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #dc2626;
+}
+.error-boundary__description {
+  margin: 0 0 32px 0;
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+.error-boundary__actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+.error-boundary__button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+.error-boundary__button--primary {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: white;
+}
+.error-boundary__button--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4);
+}
+.error-boundary__button--secondary {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.error-boundary__button--secondary:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.error-boundary__details {
+  text-align: left;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 24px;
+}
+.error-boundary__summary {
+  font-weight: 500;
+  cursor: pointer;
+  color: #374151;
+  margin-bottom: 16px;
+}
+.error-boundary__summary:hover {
+  color: #1f2937;
+}
+.error-boundary__error-info h3 {
+  margin: 16px 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+.error-boundary__error-info pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .error-boundary__container {
+    padding: 24px;
+    margin: 16px;
+  }
+  .error-boundary__actions {
+    flex-direction: column;
+  }
+  .error-boundary__button {
+    width: 100%;
+  }
+  .error-boundary__icon {
+    font-size: 48px;
+  }
+  .error-boundary__title {
+    font-size: 20px;
+  }
+}/*# sourceMappingURL=ErrorBoundary.css.map */

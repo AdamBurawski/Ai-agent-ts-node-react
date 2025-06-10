@@ -73,7 +73,7 @@ export const API_ENDPOINTS = {
   },
   IMAGE: {
     OCR: `${BASE_URL}/image/ocr`,
-    OCR_CHAT: `${BASE_URL}/image/ocr/chat`,
+    OCR_CHAT: `${BASE_URL}/image/chat`,
     PROCESS_IMAGES: `${BASE_URL}/image/process-images`,
     UPLOAD: `${BASE_URL}/image/upload`,
   },

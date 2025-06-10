@@ -1,0 +1,209 @@
+.scraper-tool {
+  padding: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.scraper-tool .scraper-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+}
+.scraper-tool .scraper-section {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+}
+.scraper-tool .scraper-section .section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.scraper-tool .input-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.scraper-tool .input-group .url-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+.scraper-tool .input-group .url-input:focus {
+  outline: none;
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.scraper-tool .input-group .crawl-button, .scraper-tool .input-group .stop-button {
+  padding: 0.5rem 1rem;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+.scraper-tool .input-group .crawl-button:hover, .scraper-tool .input-group .stop-button:hover {
+  background-color: #0b5ed7;
+}
+.scraper-tool .input-group .crawl-button:disabled, .scraper-tool .input-group .stop-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+.scraper-tool .input-group .crawl-button .loading-indicator, .scraper-tool .input-group .stop-button .loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.scraper-tool .input-group .crawl-button .loading-indicator .spinner, .scraper-tool .input-group .stop-button .loading-indicator .spinner {
+  animation: spin 1s linear infinite;
+}
+.scraper-tool .status-container {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.scraper-tool .status-container .status-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.scraper-tool .status-container .progress-bar-container {
+  width: 100%;
+  height: 0.5rem;
+  background-color: #e9ecef;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.scraper-tool .status-container .progress-bar-container .progress-bar {
+  height: 100%;
+  background-color: #0d6efd;
+  transition: width 0.5s ease;
+}
+.scraper-tool .status-container .status-info {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+.scraper-tool .status-container .status-info .current-url {
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.stop-button {
+  background-color: #dc3545;
+  margin-left: 0.5rem;
+}
+.stop-button:hover {
+  background-color: #bb2d3b;
+}
+.stop-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.scraper-tool {
+  padding: 1.5rem;
+}
+.scraper-tool .input-group {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.scraper-tool .input-group .url-input,
+.scraper-tool .input-group .question-input {
+  flex: 1;
+  padding: 0.5rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.25rem;
+}
+.scraper-tool .input-group .url-input:focus,
+.scraper-tool .input-group .question-input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+.scraper-tool .search-button {
+  padding: 0.5rem 1rem;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+.scraper-tool .search-button:hover {
+  background-color: #0b5ed7;
+}
+.scraper-tool .search-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+.scraper-tool .stop-button {
+  padding: 0.5rem 1rem;
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+.scraper-tool .stop-button:hover {
+  background-color: #bb2d3b;
+}
+.scraper-tool .result-card {
+  background-color: white;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.scraper-tool .result-card .result-answer {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 0.5rem;
+  border: 1px solid #dee2e6;
+}
+.scraper-tool .result-card .result-answer h5 {
+  margin: 0 0 0.5rem 0;
+  color: #495057;
+  font-weight: 600;
+}
+.scraper-tool .result-card .result-answer .answer-text {
+  margin: 0;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: #212529;
+}
+.scraper-tool .result-card .result-answer p {
+  margin: 0;
+  line-height: 1.5;
+  color: purple;
+}
+.scraper-tool .loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.scraper-tool .loading-indicator .spinner {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}/*# sourceMappingURL=WebScraperTool.css.map */
