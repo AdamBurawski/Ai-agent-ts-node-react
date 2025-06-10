@@ -18,12 +18,32 @@ const AgentComponent: React.FC = () => {
     addMessage(message, "user");
 
     try {
-      const response = await apiService.processAgentQuery(message);
+      // Convert frontend chat history to backend format
+      const conversationHistory = messages
+        .map((msg) => ({
+          message: msg.content,
+          role: msg.type === "user" ? "user" : "agent",
+          timestamp: msg.timestamp,
+        }))
+        .concat([
+          {
+            message: message,
+            role: "user" as const,
+            timestamp: new Date(),
+          },
+        ]);
 
+      const response = await apiService.processAgentQuery(
+        message,
+        conversationHistory
+      );
+
+      // Handle new response structure: { response: string, success: boolean }
       let content = "";
       if (response.response) {
         content = response.response;
       } else if (response.result) {
+        // Fallback to old structure for compatibility
         content =
           typeof response.result === "string"
             ? response.result

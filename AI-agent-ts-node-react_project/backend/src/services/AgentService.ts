@@ -1540,6 +1540,20 @@ Streszczenie powinno być napisane w języku polskim i być przydatne jako przyp
     return this.conversationHistory;
   }
 
+  // Set conversation history (restore from frontend)
+  public setConversationHistory(
+    history: Array<{
+      message: string;
+      role: "user" | "agent";
+      timestamp: Date;
+    }>
+  ) {
+    this.conversationHistory = history.map((msg) => ({
+      ...msg,
+      timestamp: new Date(msg.timestamp), // Ensure timestamp is Date object
+    }));
+  }
+
   // Clear conversation history manually
   public clearConversationHistory() {
     this.conversationHistory = [];

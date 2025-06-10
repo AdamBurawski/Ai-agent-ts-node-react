@@ -284,10 +284,22 @@ class ApiService {
   }
 
   // Agent Services
-  async processAgentQuery(query: string): Promise<AgentResponse> {
+  async processAgentQuery(
+    query: string,
+    conversationHistory?: Array<{
+      message: string;
+      role: "user" | "agent";
+      timestamp: Date;
+    }>
+  ): Promise<AgentResponse> {
+    const body: any = { query };
+    if (conversationHistory) {
+      body.conversationHistory = conversationHistory;
+    }
+
     return this.makeRequest(API_ENDPOINTS.AGENT.PROCESS, {
       method: "POST",
-      body: JSON.stringify({ query }),
+      body: JSON.stringify(body),
     });
   }
 

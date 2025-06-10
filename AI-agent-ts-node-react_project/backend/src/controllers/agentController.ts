@@ -3,28 +3,29 @@ import { BaseController } from "../types/controller";
 import { AgentService } from "../services/AgentService";
 import config from "../config/config";
 
-// Singleton instance to maintain conversation history
-let globalAgentService: AgentService | null = null;
-
 export class AgentController implements BaseController {
   async execute(req: Request, res: Response): Promise<void | Response> {
     try {
       console.log("Received request body:", req.body);
-      const { query } = req.body;
+      const { query, conversationHistory } = req.body;
 
       if (!query) {
         return res.status(400).json({ error: "Query is required" });
       }
 
-      // Use singleton to maintain conversation history between requests
-      if (!globalAgentService) {
-        console.log("🔄 Creating new AgentService instance");
-        globalAgentService = new AgentService(config.openai.apiKey);
-      } else {
-        console.log("♻️ Reusing existing AgentService instance");
+      // Create new AgentService instance for each request (no persistence)
+      console.log("🔄 Creating new AgentService instance for fresh context");
+      const agentService = new AgentService(config.openai.apiKey);
+
+      // If conversation history is provided, restore it
+      if (conversationHistory && Array.isArray(conversationHistory)) {
+        console.log(
+          `📝 Restoring conversation history: ${conversationHistory.length} messages`
+        );
+        agentService.setConversationHistory(conversationHistory);
       }
 
-      const analysis = await globalAgentService.analyzeRequest(query);
+      const analysis = await agentService.analyzeRequest(query);
 
       if (!analysis) {
         return res.status(500).json({ error: "Failed to analyze request" });
@@ -57,21 +58,5 @@ export class AgentController implements BaseController {
     }
   }
 }
-
-// Helper function to clear conversation history
-export const clearConversationHistory = () => {
-  if (globalAgentService) {
-    globalAgentService.clearConversationHistory();
-    console.log("🧹 Conversation history cleared");
-  }
-};
-
-// Helper function to get conversation history
-export const getConversationHistory = () => {
-  if (globalAgentService) {
-    return globalAgentService.getConversationHistory();
-  }
-  return [];
-};
 
 export const agentController = new AgentController();
