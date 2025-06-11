@@ -2,74 +2,20 @@ import { Request, Response } from "express";
 import { BaseController } from "../types/controller";
 import config from "../config/config";
 import OpenAI from "openai";
+import { pool } from "../config/database";
 
-// Mock database - w prawdziwej aplikacji byłaby to rzeczywista baza danych
-const mockDatabase = {
-  users: [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      age: 30,
-      city: "New York",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      age: 25,
-      city: "Los Angeles",
-    },
-    {
-      id: 3,
-      name: "Bob Johnson",
-      email: "bob@example.com",
-      age: 35,
-      city: "Chicago",
-    },
-    {
-      id: 4,
-      name: "Alice Brown",
-      email: "alice@example.com",
-      age: 28,
-      city: "Miami",
-    },
-  ],
-  products: [
-    {
-      id: 1,
-      name: "Laptop",
-      price: 999.99,
-      category: "Electronics",
-      stock: 50,
-    },
-    {
-      id: 2,
-      name: "Phone",
-      price: 699.99,
-      category: "Electronics",
-      stock: 100,
-    },
-    { id: 3, name: "Book", price: 19.99, category: "Education", stock: 200 },
-    { id: 4, name: "Desk", price: 299.99, category: "Furniture", stock: 25 },
-  ],
-  orders: [
-    { id: 1, user_id: 1, product_id: 1, quantity: 1, order_date: "2024-01-15" },
-    { id: 2, user_id: 2, product_id: 2, quantity: 2, order_date: "2024-01-16" },
-    { id: 3, user_id: 1, product_id: 3, quantity: 3, order_date: "2024-01-17" },
-    { id: 4, user_id: 3, product_id: 1, quantity: 1, order_date: "2024-01-18" },
-  ],
-};
+// Knowledge Base SQL Module - for querying memories, embeddings and search history
 
-// Get table structure
+// Get table structure - Knowledge Base tables
 export class TableStructureController implements BaseController {
   async execute(req: Request, res: Response): Promise<void> {
     try {
-      const tables = Object.keys(mockDatabase);
+      // Return knowledge base tables
+      const tables = ["memories", "memory_embeddings", "search_history"];
 
       res.json({
         tables,
-        message: "Database structure retrieved successfully",
+        message: "Knowledge base structure retrieved successfully",
       });
     } catch (error) {
       console.error("Error fetching table structure:", error);
@@ -78,7 +24,7 @@ export class TableStructureController implements BaseController {
   }
 }
 
-// Get table details (columns)
+// Get table details (columns) - Knowledge Base schema
 export class TableDetailsController implements BaseController {
   async execute(req: Request, res: Response): Promise<void> {
     try {
@@ -91,14 +37,48 @@ export class TableDetailsController implements BaseController {
 
       const details: Record<string, { columns: string[] }> = {};
 
+      // Define knowledge base table structures
+      const knowledgeBaseSchema = {
+        memories: {
+          columns: [
+            "id",
+            "title",
+            "content",
+            "category",
+            "tags",
+            "importance_level",
+            "source",
+            "context_data",
+            "created_at",
+            "updated_at",
+          ],
+        },
+        memory_embeddings: {
+          columns: [
+            "id",
+            "memory_id",
+            "embedding",
+            "embedding_model",
+            "chunk_index",
+            "chunk_text",
+            "created_at",
+          ],
+        },
+        search_history: {
+          columns: [
+            "id",
+            "query",
+            "search_type",
+            "results_count",
+            "execution_time_ms",
+            "created_at",
+          ],
+        },
+      };
+
       tables.forEach((tableName) => {
-        if (mockDatabase[tableName]) {
-          const sampleRecord = mockDatabase[tableName][0];
-          if (sampleRecord) {
-            details[tableName] = {
-              columns: Object.keys(sampleRecord),
-            };
-          }
+        if (knowledgeBaseSchema[tableName]) {
+          details[tableName] = knowledgeBaseSchema[tableName];
         }
       });
 
@@ -122,9 +102,14 @@ export class GenerateSQLController implements BaseController {
 
   async execute(req: Request, res: Response): Promise<void> {
     try {
+      console.log("🔍 Generate SQL request received:", req.body);
       const { question, tableStructures } = req.body;
 
       if (!question || !tableStructures) {
+        console.log("❌ Missing question or tableStructures:", {
+          question,
+          tableStructures,
+        });
         res
           .status(400)
           .json({ error: "Question and table structures are required" });
@@ -139,20 +124,26 @@ export class GenerateSQLController implements BaseController {
         )
         .join("\n\n");
 
-      const prompt = `Given this database schema:
+      const prompt = `Given this Knowledge Base database schema:
 
 ${schemaDescription}
 
-Sample data preview:
-${JSON.stringify(mockDatabase, null, 2)}
+Table descriptions:
+- memories: Main knowledge storage with title, content, category, tags, importance_level, source, context_data
+- memory_embeddings: Vector embeddings for semantic search with memory_id, embedding, chunk_text  
+- search_history: Search query logs with query, search_type, results_count, execution_time_ms
 
 Generate a SQL query to answer this question: "${question}"
 
 Rules:
-- Return ONLY the SQL query, no explanation
-- Use standard SQL syntax
+- Return ONLY the SQL query, no explanation, no markdown formatting
+- Do NOT wrap in code blocks or markdown formatting
+- Use standard SQL syntax compatible with MySQL
 - Use proper table and column names from the schema
+- For JSON columns (tags, context_data, embedding), use JSON functions like JSON_EXTRACT()
+- Focus on practical queries for knowledge retrieval and analysis
 - Make sure the query is executable
+- End with semicolon
 
 SQL Query:`;
 
@@ -173,11 +164,23 @@ SQL Query:`;
         temperature: 0.1,
       });
 
-      const sqlQuery = completion.choices[0]?.message?.content?.trim() || "";
+      let sqlQuery = completion.choices[0]?.message?.content?.trim() || "";
 
       if (!sqlQuery) {
         res.status(500).json({ error: "Failed to generate SQL query" });
         return;
+      }
+
+      // Clean up markdown formatting from OpenAI response
+      sqlQuery = sqlQuery
+        .replace(/```sql\s*/g, "") // Remove ```sql
+        .replace(/```\s*/g, "") // Remove closing ```
+        .replace(/^sql\s*/i, "") // Remove 'sql' prefix if present
+        .trim();
+
+      // Ensure query ends with semicolon
+      if (!sqlQuery.endsWith(";")) {
+        sqlQuery += ";";
       }
 
       res.json({ sqlQuery });
@@ -188,7 +191,7 @@ SQL Query:`;
   }
 }
 
-// Execute SQL query (simplified for mock database)
+// Execute SQL query on Knowledge Base
 export class ExecuteSQLController implements BaseController {
   async execute(req: Request, res: Response): Promise<void> {
     try {
@@ -199,62 +202,93 @@ export class ExecuteSQLController implements BaseController {
         return;
       }
 
-      console.log("Executing SQL:", sqlQuery);
+      console.log("Executing SQL on Knowledge Base:", sqlQuery);
 
-      // Simple mock execution - in real app this would use a proper SQL engine
-      const result = this.mockExecuteSQL(sqlQuery);
+      // Security check - only allow SELECT queries
+      const normalizedQuery = sqlQuery.trim().toLowerCase();
+      if (!normalizedQuery.startsWith("select")) {
+        res.status(400).json({
+          error: "Only SELECT queries are allowed for security reasons",
+        });
+        return;
+      }
 
-      res.json({ result });
-    } catch (error) {
+      // Additional security check - block dangerous keywords
+      const dangerousKeywords = [
+        "drop",
+        "delete",
+        "update",
+        "insert",
+        "alter",
+        "create",
+        "truncate",
+      ];
+      const hasDangerousKeyword = dangerousKeywords.some((keyword) =>
+        normalizedQuery.includes(keyword)
+      );
+
+      if (hasDangerousKeyword) {
+        res.status(400).json({
+          error:
+            "Query contains prohibited keywords. Only SELECT queries allowed.",
+        });
+        return;
+      }
+
+      // Execute the query on the actual knowledge base
+      const [rows] = await pool.execute(sqlQuery);
+
+      // Convert result to plain objects and handle JSON columns
+      const result = Array.isArray(rows)
+        ? rows.map((row: any) => {
+            const plainRow = { ...row };
+
+            // Parse JSON columns for better display
+            if (plainRow.tags && typeof plainRow.tags === "string") {
+              try {
+                plainRow.tags = JSON.parse(plainRow.tags);
+              } catch (e) {
+                // Keep as string if parsing fails
+              }
+            }
+
+            if (
+              plainRow.context_data &&
+              typeof plainRow.context_data === "string"
+            ) {
+              try {
+                plainRow.context_data = JSON.parse(plainRow.context_data);
+              } catch (e) {
+                // Keep as string if parsing fails
+              }
+            }
+
+            // For embeddings, just show info instead of full vector
+            if (plainRow.embedding) {
+              plainRow.embedding_info = `Vector (${
+                Array.isArray(plainRow.embedding)
+                  ? plainRow.embedding.length
+                  : "N/A"
+              } dimensions)`;
+              delete plainRow.embedding; // Remove actual vector for cleaner display
+            }
+
+            return plainRow;
+          })
+        : [];
+
+      res.json({
+        result,
+        rowCount: result.length,
+        query: sqlQuery,
+      });
+    } catch (error: any) {
       console.error("Error executing SQL:", error);
-      res.status(500).json({ error: "Failed to execute SQL query" });
+      res.status(500).json({
+        error: "Failed to execute SQL query",
+        details: error.message,
+      });
     }
-  }
-
-  private mockExecuteSQL(sqlQuery: string): any[] {
-    const query = sqlQuery.toLowerCase().trim();
-
-    // Very basic SQL parsing for demonstration
-    if (query.includes("select") && query.includes("users")) {
-      if (query.includes("where") && query.includes("age")) {
-        return mockDatabase.users.filter((user) => user.age > 25);
-      }
-      return mockDatabase.users;
-    }
-
-    if (query.includes("select") && query.includes("products")) {
-      if (query.includes("where") && query.includes("price")) {
-        return mockDatabase.products.filter((product) => product.price < 500);
-      }
-      return mockDatabase.products;
-    }
-
-    if (query.includes("select") && query.includes("orders")) {
-      return mockDatabase.orders;
-    }
-
-    if (query.includes("count")) {
-      if (query.includes("users")) {
-        return [{ count: mockDatabase.users.length }];
-      }
-      if (query.includes("products")) {
-        return [{ count: mockDatabase.products.length }];
-      }
-      if (query.includes("orders")) {
-        return [{ count: mockDatabase.orders.length }];
-      }
-    }
-
-    // Default response
-    return [
-      {
-        message: "Query executed successfully",
-        note:
-          "This is a mock database. Query: " +
-          sqlQuery.substring(0, 50) +
-          "...",
-      },
-    ];
   }
 }
 

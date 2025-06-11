@@ -53,6 +53,8 @@ export interface TableStructure {
   details?: Record<string, { columns: string[] }>;
 }
 
+export type TableDetails = Record<string, { columns: string[] }>;
+
 export interface QueryResult {
   result: Array<Record<string, string | number>>;
 }
@@ -342,10 +344,14 @@ class ApiService {
   async generateSQL(
     params: SQLGenerationParams
   ): Promise<{ sqlQuery: string }> {
-    return this.makeRequest(API_ENDPOINTS.SQL.GENERATE_SQL, {
+    console.log("🌐 API Service: Calling generateSQL with:", params);
+    console.log("🌐 API Service: URL:", API_ENDPOINTS.SQL.GENERATE_SQL);
+    const result = await this.makeRequest(API_ENDPOINTS.SQL.GENERATE_SQL, {
       method: "POST",
       body: JSON.stringify(params),
     });
+    console.log("🌐 API Service: generateSQL response:", result);
+    return result;
   }
 
   async executeSQL(sqlQuery: string): Promise<QueryResult> {

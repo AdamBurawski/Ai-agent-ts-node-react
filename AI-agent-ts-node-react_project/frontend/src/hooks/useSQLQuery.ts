@@ -4,6 +4,7 @@ import {
   TableStructure,
   TableDetails,
   QueryResult,
+  SQLGenerationParams,
 } from "../services/api";
 import { useApiCall } from "./useApiCall";
 
@@ -49,7 +50,15 @@ export const useSQLQuery = () => {
     loading: generateLoading,
     error: generateError,
   } = useApiCall(async (question: string, tableStructures: TableDetails) => {
-    const response = await apiService.generateSQL(question, tableStructures);
+    console.log("🔍 Frontend: Generating SQL with:", {
+      question,
+      tableStructures,
+    });
+    const response = await apiService.generateSQL({
+      question,
+      tableStructures,
+    });
+    console.log("✅ Frontend: SQL generated:", response);
     setState((prev) => ({ ...prev, sqlQuery: response.sqlQuery }));
     return response;
   });
@@ -64,18 +73,6 @@ export const useSQLQuery = () => {
     }
     const response = await apiService.executeSQL(state.sqlQuery);
     setState((prev) => ({ ...prev, result: response.result || [] }));
-    return response;
-  });
-
-  const {
-    execute: submitResult,
-    loading: submitLoading,
-    error: submitError,
-  } = useApiCall(async () => {
-    if (!state.result) {
-      throw new Error("No result to submit.");
-    }
-    const response = await apiService.submitSQLResult(state.result);
     return response;
   });
 
@@ -94,17 +91,27 @@ export const useSQLQuery = () => {
 
   const generateAndExecute = async () => {
     try {
+      console.log("🚀 Frontend: generateAndExecute called with state:", {
+        question: state.question,
+        tableDetails: state.tableDetails,
+        tables: state.tables,
+      });
+
       if (!state.question.trim()) {
         throw new Error("Please enter a question first.");
       }
 
       // Fetch table details if not available
       if (!state.tableDetails && state.tables.length > 0) {
+        console.log("📋 Frontend: Fetching table details for:", state.tables);
         await fetchTableDetails(state.tables);
       }
 
       if (state.tableDetails) {
+        console.log("✅ Frontend: Calling generateSQL...");
         await generateSQL(state.question, state.tableDetails);
+      } else {
+        console.log("❌ Frontend: No table details available");
       }
     } catch (error) {
       console.error("Error in generateAndExecute:", error);
@@ -112,18 +119,9 @@ export const useSQLQuery = () => {
   };
 
   const isLoading =
-    structureLoading ||
-    detailsLoading ||
-    generateLoading ||
-    executeLoading ||
-    submitLoading;
+    structureLoading || detailsLoading || generateLoading || executeLoading;
 
-  const error =
-    structureError ||
-    detailsError ||
-    generateError ||
-    executeError ||
-    submitError;
+  const error = structureError || detailsError || generateError || executeError;
 
   return {
     // State
@@ -140,7 +138,6 @@ export const useSQLQuery = () => {
     fetchTableDetails,
     generateSQL,
     executeSQL,
-    submitResult,
     generateAndExecute,
 
     // Status
@@ -152,6 +149,5 @@ export const useSQLQuery = () => {
     detailsLoading,
     generateLoading,
     executeLoading,
-    submitLoading,
   };
 };

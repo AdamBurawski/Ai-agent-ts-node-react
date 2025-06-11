@@ -55,3 +55,7 @@
 .image-generator__prompt {
   color: #6c757d;
 }
+
+.sql-query__section .sql-query__tables {
+  grid-template-columns: repeat(auto-fill, minmax(30%, 1fr));
+}
