@@ -9,7 +9,7 @@ import {
   GetStatisticsController,
   BulkImportController,
 } from "../controllers/knowledgeBaseController";
-import { KnowledgeBaseService } from "../services/knowledgeBaseService";
+import { KnowledgeBaseService } from "../services/KnowledgeBaseService";
 import { Request, Response } from "express";
 
 const router = Router();
@@ -66,29 +66,39 @@ router.post("/bulk-import", (req, res) => {
 // GET /api/knowledge/debug - Debug endpoint to check database content
 router.get("/debug", async (req, res) => {
   try {
-    const { pool } = await import("../config/database");
+    const { supabase } = await import("../config/database");
 
     // Get all memories
-    const [memories] = await pool.execute(
-      "SELECT * FROM memories ORDER BY created_at DESC LIMIT 10"
-    );
+    const { data: memories, error: memoriesError } = await supabase
+      .from("memories")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-    // Get all embeddings count
-    const [embeddingCount] = await pool.execute(
-      "SELECT COUNT(*) as count FROM memory_embeddings"
-    );
+    if (memoriesError) throw memoriesError;
+
+    // Get all memory chunks count
+    const { count: embeddingCount, error: countError } = await supabase
+      .from("memory_chunks")
+      .select("*", { count: "exact", head: true });
+
+    if (countError) throw countError;
 
     // Get recent search history
-    const [searchHistory] = await pool.execute(
-      "SELECT * FROM search_history ORDER BY created_at DESC LIMIT 5"
-    );
+    const { data: searchHistory, error: searchError } = await supabase
+      .from("search_history")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    if (searchError) throw searchError;
 
     res.json({
       success: true,
       data: {
-        memories_count: Array.isArray(memories) ? memories.length : 0,
+        memories_count: memories ? memories.length : 0,
         recent_memories: memories,
-        embeddings_count: embeddingCount[0]?.count || 0,
+        embeddings_count: embeddingCount || 0,
         recent_searches: searchHistory,
       },
     });
@@ -133,14 +143,18 @@ router.get("/all", async (req: Request, res: Response) => {
   try {
     console.log("🔍 Getting all memories...");
 
-    const { pool } = await import("../config/database");
-    const [rows] = await pool.execute(
-      "SELECT * FROM memories ORDER BY created_at DESC LIMIT 10"
-    );
+    const { supabase } = await import("../config/database");
+    const { data: rows, error } = await supabase
+      .from("memories")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
 
     res.json({
       success: true,
-      message: `Found ${Array.isArray(rows) ? rows.length : 0} memories`,
+      message: `Found ${rows ? rows.length : 0} memories`,
       data: rows,
     });
   } catch (error) {

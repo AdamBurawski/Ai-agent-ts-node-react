@@ -1,26 +1,16 @@
-import * as fs from "fs/promises";
-import {
-  audioController,
-  ProcessFolderController,
-} from "../controllers/audioController";
-import { textController } from "../controllers/textController";
-import { imageChatController } from "../controllers/imageChatController";
+import OpenAI from "openai";
+import { WebScraper } from "./WebScraper";
 import { searchController } from "../controllers/searchController";
 import { queryVectorController } from "../controllers/queryVectorController";
-import { processFolderController } from "../controllers/processFolderController";
-import { Response, Request } from "express";
-import OpenAI from "openai";
-import config from "../config/config";
-import axios from "axios";
-import { ImageChatController } from "../controllers/imageController";
-import { SearchController } from "../controllers/scraperController";
-import { QueryVectorController } from "../controllers/vectorController";
-import { WebScraper } from "./WebScraper";
-import path from "path";
-import { tools } from "../config/tools";
 import { ShortestPathController } from "../controllers/graphController";
+import { audioController } from "../controllers/audioController";
 import { ProcessImagesController } from "../controllers/imageController";
-import { KnowledgeBaseService } from "./KnowledgeBaseService";
+import { imageChatController } from "../controllers/imageChatController";
+import { SupabaseKnowledgeBaseService } from "./SupabaseKnowledgeBaseService";
+import path from "path";
+import fs from "fs/promises";
+import { Response } from "express";
+import { supabase } from "../config/database";
 
 interface Tool {
   name: string;
@@ -212,13 +202,13 @@ export class AgentService {
     timestamp: Date;
   }> = [];
   private openaiApiKey: string;
-  private searchController: SearchController;
-  private queryVectorController: QueryVectorController;
+  private searchController: typeof searchController;
+  private queryVectorController: typeof queryVectorController;
   private graphController: ShortestPathController;
   private audioController = audioController;
   private imageController: ProcessImagesController;
-  private imageChatController: ImageChatController;
-  private knowledgeBase: KnowledgeBaseService;
+  private imageChatController: typeof imageChatController;
+  private knowledgeBase: SupabaseKnowledgeBaseService;
   private tools: Tool[] = [
     {
       name: "web_scraper",
@@ -350,12 +340,12 @@ export class AgentService {
     this.openai = new OpenAI({ apiKey: openaiApiKey });
     this.webScraper = new WebScraper(openaiApiKey);
     this.openaiApiKey = openaiApiKey;
-    this.searchController = new SearchController();
-    this.queryVectorController = new QueryVectorController();
+    this.searchController = searchController;
+    this.queryVectorController = queryVectorController;
     this.graphController = new ShortestPathController();
     this.imageController = new ProcessImagesController();
-    this.imageChatController = new ImageChatController();
-    this.knowledgeBase = new KnowledgeBaseService();
+    this.imageChatController = imageChatController;
+    this.knowledgeBase = new SupabaseKnowledgeBaseService();
   }
 
   private async findFilesInUploads(...extensions: string[]): Promise<string[]> {
@@ -1400,32 +1390,29 @@ Please answer the user's question based on these search results.`,
       // Store FULL conversation in knowledge base (not summary!)
       const memory = {
         title,
-        content: fullConversationText, // FULL conversation instead of summary
-        category: "full_conversations",
+        user_id: "384779bb-47d0-48ee-a498-cd33e1654f9f", // Używamy ID użytkownika testowego
         tags: [...topics, "pełna_rozmowa", "kompletna_transkrypcja"],
-        importance_level: importanceLevel,
+        importance:
+          importanceLevel === "critical"
+            ? 10
+            : importanceLevel === "high"
+            ? 8
+            : importanceLevel === "medium"
+            ? 5
+            : 3,
         source: "ai_agent_chat_full",
-        context_data: {
-          conversation_date: new Date().toISOString(),
-          message_count: this.conversationHistory.length,
-          duration_minutes: this.calculateConversationDuration(),
-          participant_count: 2, // user + agent
-          conversation_type: "full_transcript",
-          start_time: this.conversationHistory[0]?.timestamp.toISOString(),
-          end_time:
-            this.conversationHistory[
-              this.conversationHistory.length - 1
-            ]?.timestamp.toISOString(),
-          character_count: fullConversationText.length,
-        },
       };
 
-      const memoryId = await this.knowledgeBase.storeMemory(memory);
+      const memoryId = await this.knowledgeBase.storeMemory(
+        memory,
+        fullConversationText,
+        memory.user_id
+      );
 
       // Clear conversation history after saving
       this.conversationHistory = [];
 
-      return `✅ Pełna konwersacja została zapisana w bazie wiedzy jako wspomnienie #${memoryId}. Tytuł: "${title}". Zapisano ${memory.context_data.message_count} wiadomości (${memory.context_data.character_count} znaków) wraz z wektorami embeddingów.`;
+      return `✅ Pełna konwersacja została zapisana w bazie wiedzy jako wspomnienie #${memoryId}. Tytuł: "${title}". Zapisano ${this.conversationHistory.length} wiadomości (${fullConversationText.length} znaków) wraz z wektorami embeddingów.`;
     } catch (error) {
       console.error("Error saving conversation to knowledge base:", error);
       return `❌ Wystąpił błąd podczas zapisywania konwersacji: ${error.message}`;
