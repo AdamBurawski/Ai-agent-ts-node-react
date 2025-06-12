@@ -1019,6 +1019,25 @@ OR for conversational queries:
             mockResponse
           );
 
+          // Dodajemy szczegółowe logowanie struktury danych
+          console.log(
+            "IMAGE_INTERPRETER_RESULT_STRUCTURE:",
+            JSON.stringify(result, null, 2)
+          );
+
+          // Dodajemy opis obrazka do wyniku
+          if (
+            result &&
+            result.imageDescriptions &&
+            result.imageDescriptions.length > 0
+          ) {
+            return {
+              success: true,
+              data: result,
+              image_descriptions: result.imageDescriptions,
+            };
+          }
+
           return {
             success: true,
             data: result,
@@ -1089,6 +1108,60 @@ OR for conversational queries:
   }
 
   private async generateResponse(query: string, toolResult: any) {
+    // Special handling for image_interpreter results
+    if (
+      toolResult &&
+      toolResult.data &&
+      toolResult.data.success &&
+      toolResult.data.message === "Image chat controller executed successfully"
+    ) {
+      // Sprawdź, czy mamy opisy obrazków w nowej strukturze danych
+      if (
+        toolResult.data.imageDescriptions &&
+        toolResult.data.imageDescriptions.length > 0
+      ) {
+        return toolResult.data.imageDescriptions.join("\n\n");
+      }
+
+      // Sprawdź, czy mamy opisy obrazków w image_descriptions (starsze podejście)
+      if (
+        toolResult.image_descriptions &&
+        toolResult.image_descriptions.length > 0
+      ) {
+        return toolResult.image_descriptions.join("\n\n");
+      }
+
+      // Sprawdź, czy w konsoli są opisy obrazków
+      const consoleOutput = JSON.stringify(toolResult);
+      const imageDescriptionMatch = consoleOutput.match(
+        /Image description \(([^)]+)\): (.*?)(?=Tool execution|$)/s
+      );
+
+      if (imageDescriptionMatch && imageDescriptionMatch[2]) {
+        const filename = imageDescriptionMatch[1];
+        const description = imageDescriptionMatch[2].trim();
+        return `Opis obrazka ${filename}:\n${description}`;
+      }
+
+      // Jeśli nie znaleziono opisu w standardowych miejscach, przeszukaj cały obiekt
+      const stringifiedResult = JSON.stringify(toolResult);
+      if (stringifiedResult.includes("Image description")) {
+        const regex =
+          /Image description \(([^)]+)\): (.*?)(?=Image description|\n\n|$)/gs;
+        const matches = [...stringifiedResult.matchAll(regex)];
+
+        if (matches && matches.length > 0) {
+          const descriptions = matches.map((match) => {
+            const filename = match[1];
+            const description = match[2].trim();
+            return `Opis obrazka ${filename}:\n${description}`;
+          });
+
+          return descriptions.join("\n\n");
+        }
+      }
+    }
+
     // Special handling for knowledge_search results
     if (toolResult && toolResult.results && toolResult.results.length > 0) {
       const systemContent = `You are an AI assistant that MUST answer questions based ONLY on the provided knowledge base search results. 
@@ -1108,7 +1181,6 @@ Answer the user's question based on the search results provided.`;
             `Memory ID: ${result.id}
 Title: ${result.title}
 Content: ${result.content}
-Category: ${result.category}
 Tags: ${JSON.stringify(result.tags)}
 Created: ${result.created_at}`
         )
