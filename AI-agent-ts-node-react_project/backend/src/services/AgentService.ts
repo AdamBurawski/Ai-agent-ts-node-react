@@ -655,11 +655,14 @@ OR for conversational queries:
         try {
           console.log("🔍 Knowledge search starting...", { params, query });
 
-          // Try simple method first - get statistics (this works)
-          const stats = await this.knowledgeBase.getStatistics();
+          // Get user ID - using our test user for now
+          const userId = "384779bb-47d0-48ee-a498-cd33e1654f9f";
+
+          // Try simple method first - get statistics
+          const stats = await this.knowledgeBase.getStatistics(userId);
           console.log("📊 Database stats:", stats);
 
-          if (stats.total_memories === 0) {
+          if (stats.memory_count === 0) {
             return {
               success: true,
               message: "Baza wiedzy jest pusta. Brak zapisanych wspomnień.",
@@ -670,59 +673,53 @@ OR for conversational queries:
 
           // Try to get some memories directly without complex search
           try {
-            const { pool } = await import("../config/database");
-            const [rows] = await pool.execute(
-              "SELECT * FROM memories ORDER BY created_at DESC LIMIT 5"
-            );
+            // Używamy Supabase zamiast MySQL
+            const { data: memories, error } = await supabase
+              .from("memories")
+              .select("*")
+              .eq("user_id", userId)
+              .order("created_at", { ascending: false })
+              .limit(5);
 
-            const formattedResults = Array.isArray(rows)
-              ? rows.map((memory: any) => {
-                  let tags = [];
-                  try {
-                    if (memory.tags) {
-                      // Try to parse as JSON, if fails treat as string
-                      if (
-                        typeof memory.tags === "string" &&
-                        memory.tags.startsWith("[")
-                      ) {
-                        tags = JSON.parse(memory.tags);
-                      } else {
-                        tags = [memory.tags]; // Wrap string in array
-                      }
-                    }
-                  } catch (e) {
-                    console.warn(
-                      "Tags parsing failed, using as string:",
-                      memory.tags
-                    );
-                    tags = [memory.tags];
-                  }
+            if (error) throw error;
 
-                  return {
-                    id: memory.id,
-                    title: memory.title,
-                    content: memory.content, // Return full content instead of truncated
-                    category: memory.category,
-                    tags: tags,
-                    importance: memory.importance_level,
-                    created_at: memory.created_at,
-                  };
-                })
-              : [];
+            // Pobierz fragmenty dla każdej pamięci
+            const formattedResults = [];
+            for (const memory of memories || []) {
+              // Pobierz fragmenty dla tego wspomnienia
+              const { data: chunks, error: chunksError } = await supabase
+                .from("memory_chunks")
+                .select("content")
+                .eq("memory_id", memory.id)
+                .eq("user_id", userId);
+
+              if (chunksError) throw chunksError;
+
+              // Połącz fragmenty w pełną treść
+              const content = chunks.map((chunk) => chunk.content).join("\n\n");
+
+              formattedResults.push({
+                id: memory.id,
+                title: memory.title,
+                content: content,
+                tags: memory.tags || [],
+                importance: memory.importance,
+                created_at: memory.created_at,
+              });
+            }
 
             return {
               success: true,
               message: `Znaleziono ${formattedResults.length} zapisanych wspomnień:`,
               results: formattedResults,
               total: formattedResults.length,
-              note: "Używam prostej metody pobierania danych (wyszukiwanie zaawansowane ma problemy z parametrami)",
             };
           } catch (directError) {
             console.error("Direct database access failed:", directError);
 
             return {
               success: true,
-              message: `W bazie danych jest ${stats.total_memories} wspomnień, ale wystąpił problem z ich odczytaniem.`,
+              message: `W bazie danych jest ${stats.memory_count} wspomnień, ale wystąpił problem z ich odczytaniem.`,
               results: [],
               stats: stats,
               error_details: directError.message,
@@ -740,6 +737,9 @@ OR for conversational queries:
         try {
           console.log("💾 Save memory starting...", { params, query });
 
+          // Get user ID - using our test user for now
+          const userId = "384779bb-47d0-48ee-a498-cd33e1654f9f";
+
           // Check if user wants to save current conversation
           if (this.conversationHistory.length > 0) {
             const saveResult = await this.saveConversationToKnowledge();
@@ -755,18 +755,17 @@ OR for conversational queries:
 
             const memory = {
               title: `Ręczne wspomnienie: ${new Date().toLocaleDateString()}`,
-              content: contentToSave,
-              category: "manual_entry",
+              user_id: userId,
               tags: ["manual", "user_input"],
-              importance_level: "medium" as const,
+              importance: 5,
               source: "manual_entry",
-              context_data: {
-                saved_at: new Date().toISOString(),
-                method: "manual",
-              },
             };
 
-            const memoryId = await this.knowledgeBase.storeMemory(memory);
+            const memoryId = await this.knowledgeBase.storeMemory(
+              memory,
+              contentToSave,
+              userId
+            );
 
             return {
               success: true,
