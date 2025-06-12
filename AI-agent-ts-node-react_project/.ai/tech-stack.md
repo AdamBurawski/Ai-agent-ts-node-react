@@ -28,7 +28,7 @@ Poniższy dokument opisuje technologie zidentyfikowane w kodzie źródłowym apl
 - **Framework**: Express.js (`express`)
 - **Język**: TypeScript (`typescript`, `ts-node`)
 - **Bazy Danych (sterowniki)**:
-  - `mysql2`: Klient dla baz danych MySQL/MariaDB.
+  - `PostgreSQL`: Klient dla baz danych
   - `neo4j-driver`: Klient dla grafowej bazy danych Neo4j.
 - **Integracja AI**:
   - `openai`: Oficjalna biblioteka kliencka OpenAI.
