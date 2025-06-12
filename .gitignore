@@ -15,6 +15,7 @@ build/
 dist-ssr/
 *.local
 
+
 # Environment variables and config files
 .env
 .env.local
