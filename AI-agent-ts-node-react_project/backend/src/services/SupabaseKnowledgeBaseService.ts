@@ -130,6 +130,9 @@ export class SupabaseKnowledgeBaseService {
       return memoryId;
     } catch (error) {
       console.error("Error storing memory:", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      console.error("Error message:", error?.message);
+      console.error("Error code:", error?.code);
       throw error;
     }
   }

@@ -170,7 +170,12 @@ const systemMessage = `Available tools and when to use them:
   - "create embeddings"
   - "update vector database"
 - process_audio: Use for transcribing audio files and voice recordings
-- web_scraper: Use for getting information from websites
+- web_scraper: Use for scraping websites and answering questions about their content.
+  Required parameters: url (website to scrape)
+  Optional parameters: question (specific question about the content), maxPages (number of pages to scrape, default 5)
+  Examples:
+  - "scrape https://example.com" -> params: { url: "https://example.com" }
+  - "what does wikipedia say about AI?" -> params: { url: "https://en.wikipedia.org/wiki/Artificial_intelligence", question: "what does this say about AI?" }
 - vector_search: Use for searching in the database
 - image_interpreter: Use for analyzing and describing images (for queries about images, pictures, photos)
 - graph_search: Use for finding shortest paths between users in the social graph.
@@ -561,7 +566,12 @@ Available tools and when to use them:
   - "create embeddings"
   - "update vector database"
 - process_audio: Use for transcribing audio files and voice recordings
-- web_scraper: Use for getting information from websites
+- web_scraper: Use for scraping websites and answering questions about their content.
+  Required parameters: url (website to scrape)
+  Optional parameters: question (specific question about the content), maxPages (number of pages to scrape, default 5)
+  Examples:
+  - "scrape https://example.com" -> params: { url: "https://example.com" }
+  - "what does wikipedia say about AI?" -> params: { url: "https://en.wikipedia.org/wiki/Artificial_intelligence", question: "what does this say about AI?" }
 - vector_search: Use for searching in the database
 - image_interpreter: Use for analyzing and describing images (for queries about images, pictures, photos)
 - graph_search: Use for finding shortest paths between users in the social graph.
@@ -881,16 +891,37 @@ OR for conversational queries:
           // Dodaj protokół https:// jeśli nie ma
           const fullUrl = url.startsWith("http") ? url : `https://${url}`;
 
-          const result = await this.webScraper.scrapeWebsiteWithQuestion(
-            fullUrl,
-            "Describe what this website is about",
-            1
+          // Use question from params or create a default question
+          const question =
+            params.question || query || "Describe what this website is about";
+          const maxPages = params.maxPages || 5;
+
+          console.log(
+            `🌐 Web scraping: ${fullUrl} with question: "${question}"`
           );
 
-          return {
-            success: true,
-            data: result,
-          };
+          const result = await this.webScraper.scrapeWebsiteWithQuestion(
+            fullUrl,
+            question,
+            maxPages
+          );
+
+          if (result) {
+            return {
+              success: true,
+              data: result,
+              message: `Found answer on page: ${result.title}`,
+              answer: result.answer,
+              source_url: result.url,
+            };
+          } else {
+            return {
+              success: false,
+              message: "No relevant answer found on the website",
+              error:
+                "Could not find answer to the question on the scraped pages",
+            };
+          }
         } catch (error) {
           console.error("Web scraping error:", error);
           return {
@@ -1486,7 +1517,13 @@ Please answer the user's question based on these search results.`,
       return `✅ Pełna konwersacja została zapisana w bazie wiedzy jako wspomnienie #${memoryId}. Tytuł: "${title}". Zapisano ${this.conversationHistory.length} wiadomości (${fullConversationText.length} znaków) wraz z wektorami embeddingów.`;
     } catch (error) {
       console.error("Error saving conversation to knowledge base:", error);
-      return `❌ Wystąpił błąd podczas zapisywania konwersacji: ${error.message}`;
+      console.error("Error type:", typeof error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      console.error("Error message:", error?.message);
+      console.error("Error stack:", error?.stack);
+      return `❌ Wystąpił błąd podczas zapisywania konwersacji: ${
+        error?.message || "Unknown error"
+      }`;
     }
   }
 
