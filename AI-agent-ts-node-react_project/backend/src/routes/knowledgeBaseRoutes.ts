@@ -1,27 +1,21 @@
 import { Router } from "express";
 import {
-  StoreMemoryController,
-  SearchMemoriesController,
-  GetMemoryController,
-  UpdateMemoryController,
-  DeleteMemoryController,
-  GetCategoriesController,
-  GetStatisticsController,
-  BulkImportController,
-} from "../controllers/knowledgeBaseController";
-import { KnowledgeBaseService } from "../services/KnowledgeBaseService";
+  SupabaseStoreMemoryController,
+  SupabaseSearchMemoriesController,
+  SupabaseGetMemoryController,
+  SupabaseGetStatisticsController,
+  SupabaseGetCategoriesController,
+} from "../controllers/supabaseKnowledgeBaseController";
+import { SupabaseKnowledgeBaseService } from "../services/SupabaseKnowledgeBaseService";
 import { Request, Response } from "express";
 
 const router = Router();
 
-const storeMemoryController = new StoreMemoryController();
-const searchMemoriesController = new SearchMemoriesController();
-const getMemoryController = new GetMemoryController();
-const updateMemoryController = new UpdateMemoryController();
-const deleteMemoryController = new DeleteMemoryController();
-const getCategoriesController = new GetCategoriesController();
-const getStatisticsController = new GetStatisticsController();
-const bulkImportController = new BulkImportController();
+const storeMemoryController = new SupabaseStoreMemoryController();
+const searchMemoriesController = new SupabaseSearchMemoriesController();
+const getMemoryController = new SupabaseGetMemoryController();
+const getCategoriesController = new SupabaseGetCategoriesController();
+const getStatisticsController = new SupabaseGetStatisticsController();
 
 // POST /api/knowledge/memories - Store new memory
 router.post("/memories", (req, res) => {
@@ -38,15 +32,7 @@ router.get("/memories/:id", (req, res) => {
   getMemoryController.execute(req, res);
 });
 
-// PUT /api/knowledge/memories/:id - Update memory
-router.put("/memories/:id", (req, res) => {
-  updateMemoryController.execute(req, res);
-});
-
-// DELETE /api/knowledge/memories/:id - Delete memory
-router.delete("/memories/:id", (req, res) => {
-  deleteMemoryController.execute(req, res);
-});
+// TODO: Implement update and delete endpoints for Supabase
 
 // GET /api/knowledge/categories - Get all categories
 router.get("/categories", (req, res) => {
@@ -58,10 +44,7 @@ router.get("/statistics", (req, res) => {
   getStatisticsController.execute(req, res);
 });
 
-// POST /api/knowledge/bulk-import - Bulk import memories
-router.post("/bulk-import", (req, res) => {
-  bulkImportController.execute(req, res);
-});
+// TODO: Implement bulk import for Supabase
 
 // GET /api/knowledge/debug - Debug endpoint to check database content
 router.get("/debug", async (req, res) => {
@@ -113,11 +96,12 @@ router.get("/test-db", async (req: Request, res: Response) => {
   try {
     console.log("🧪 Testing database connection...");
 
-    const knowledgeBase = new KnowledgeBaseService();
+    const knowledgeBase = new SupabaseKnowledgeBaseService();
+    const testUserId = "503eb63f-7cdb-4192-a032-85da0725ff05";
 
     // Test basic queries
-    const stats = await knowledgeBase.getStatistics();
-    const categories = await knowledgeBase.getCategories();
+    const stats = await knowledgeBase.getStatistics(testUserId);
+    const categories = await knowledgeBase.getCategories(testUserId);
 
     res.json({
       success: true,

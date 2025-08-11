@@ -666,7 +666,7 @@ OR for conversational queries:
           console.log("🔍 Knowledge search starting...", { params, query });
 
           // Get user ID - using our test user for now
-          const userId = "384779bb-47d0-48ee-a498-cd33e1654f9f";
+          const userId = "503eb63f-7cdb-4192-a032-85da0725ff05";
 
           // Try simple method first - get statistics
           const stats = await this.knowledgeBase.getStatistics(userId);
@@ -748,7 +748,7 @@ OR for conversational queries:
           console.log("💾 Save memory starting...", { params, query });
 
           // Get user ID - using our test user for now
-          const userId = "384779bb-47d0-48ee-a498-cd33e1654f9f";
+          const userId = "503eb63f-7cdb-4192-a032-85da0725ff05";
 
           // Check if user wants to save current conversation
           if (this.conversationHistory.length > 0) {
@@ -1492,7 +1492,7 @@ Please answer the user's question based on these search results.`,
       // Store FULL conversation in knowledge base (not summary!)
       const memory = {
         title,
-        user_id: "384779bb-47d0-48ee-a498-cd33e1654f9f", // Używamy ID użytkownika testowego
+        user_id: "503eb63f-7cdb-4192-a032-85da0725ff05", // Używamy ID użytkownika testowego
         tags: [...topics, "pełna_rozmowa", "kompletna_transkrypcja"],
         importance:
           importanceLevel === "critical"
@@ -1504,6 +1504,15 @@ Please answer the user's question based on these search results.`,
             : 3,
         source: "ai_agent_chat_full",
       };
+
+      console.log("💾 Attempting to store memory:", {
+        title: memory.title,
+        user_id: memory.user_id,
+        tags: memory.tags,
+        importance: memory.importance,
+        contentLength: fullConversationText.length,
+        source: memory.source,
+      });
 
       const memoryId = await this.knowledgeBase.storeMemory(
         memory,

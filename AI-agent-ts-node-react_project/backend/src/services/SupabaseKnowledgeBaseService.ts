@@ -91,6 +91,8 @@ export class SupabaseKnowledgeBaseService {
     userId: string
   ): Promise<string | null> {
     try {
+      console.log("💾 Inserting memory into database...");
+      
       // Insert memory
       const { data: memoryData, error: memoryError } = await supabase
         .from("memories")
@@ -271,6 +273,24 @@ export class SupabaseKnowledgeBaseService {
         chunk_count: 0,
         category_count: 0,
       };
+    }
+  }
+
+  // Get all categories for user
+  async getCategories(userId: string): Promise<any[]> {
+    try {
+      const { data: categories, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("user_id", userId)
+        .order("name");
+
+      if (error) throw error;
+
+      return categories || [];
+    } catch (error) {
+      console.error("Error getting categories:", error);
+      return [];
     }
   }
 }

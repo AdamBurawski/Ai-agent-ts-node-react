@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { BaseController } from "../types/controller";
 import {
-  KnowledgeBaseService,
+  SupabaseKnowledgeBaseService,
   Memory,
   SearchOptions,
-} from "../services/KnowledgeBaseService";
+} from "../services/SupabaseKnowledgeBaseService";
 
-const knowledgeBase = new KnowledgeBaseService();
+const knowledgeBase = new SupabaseKnowledgeBaseService();
 
 // Store new memory
 export class StoreMemoryController implements BaseController {
