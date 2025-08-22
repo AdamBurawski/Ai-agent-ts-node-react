@@ -521,7 +521,9 @@ export class AgentService {
   }
 
   async selectTool(query: string): Promise<ToolSelection> {
-    const systemMessage = `You are a JSON-only response tool selector. You must ALWAYS respond with valid JSON.
+    const systemMessage = `You are a JSON-only response tool selector with access to conversation history context. You must ALWAYS respond with valid JSON.
+
+CONTEXT AWARENESS: You have access to the full conversation history. Use this context to understand what the user is referring to when they ask follow-up questions, analysis requests, or use pronouns like "this", "that", "it", etc.
 
 IMPORTANT: Only use knowledge_search when user EXPLICITLY asks for SAVED/RECORDED conversations or memories from database.
 
@@ -540,6 +542,8 @@ Available tools and when to use them:
   - "kim był Napoleon?" -> general question, use conversational response
   - "kim był Piłsudski?" -> general question, use conversational response
   - "co wiesz o historii?" -> general question, use conversational response
+  - "przeanalizuj ten problem" -> analysis request about something from conversation history, use conversational response
+  - "co o tym myślisz?" -> opinion request about something from conversation history, use conversational response
   
   Examples of when TO use:
   - "odczytaj zapisane rozmowy" -> selectedTool: "knowledge_search", params: { query: "rozmowy" }
@@ -584,13 +588,23 @@ Available tools and when to use them:
 For image-related queries, ALWAYS use image_interpreter tool.
 For path finding and user connection queries, ALWAYS use graph_search tool.
 
-For simple conversational queries, greetings, or unclear requests that don't match any specific tool, respond with:
+For simple conversational queries, greetings, analysis requests, or general questions that don't match any specific tool, respond with:
 {
     "selectedTool": "",
     "parameters": {},
     "reasoning": "This is a conversational query that doesn't require a specific tool",
     "response": "Generated appropriate response here"
 }
+
+IMPORTANT: When responding to conversational queries, you have access to conversation history context. Use this context to provide relevant answers. For example:
+- If user previously read a file and now asks "analyze this" or "what do you think about this", use the conversation context
+- If user asks follow-up questions referencing previous messages, use the context to understand what they're referring to
+- If user says "przeanalizuj ten problem" after reading a text file, analyze the content from that file
+- If user asks about "this", "that", "it", look at the conversation history to understand the reference
+
+When generating a conversational response, make sure to reference and analyze the relevant content from the conversation history.
+
+Response always in polish language.
 
 You must respond with ONLY a JSON object in this exact format:
 {
@@ -611,12 +625,30 @@ OR for conversational queries:
 }`;
 
     try {
+      // Prepare conversation history for context
+      const messages: Array<{
+        role: "system" | "user" | "assistant";
+        content: string;
+      }> = [{ role: "system", content: systemMessage }];
+
+      // Add recent conversation history for context (last 10 messages)
+      const recentHistory = this.conversationHistory.slice(-10);
+      for (const msg of recentHistory) {
+        messages.push({
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.message,
+        });
+      }
+
+      // Add current query
+      messages.push({
+        role: "user",
+        content: `Select tool for query: ${query}`,
+      });
+
       const response = await this.openai.chat.completions.create({
         model: this.model,
-        messages: [
-          { role: "system", content: systemMessage },
-          { role: "user", content: `Select tool for query: ${query}` },
-        ],
+        messages: messages,
         temperature: 0,
       });
 
@@ -1218,44 +1250,75 @@ Created: ${result.created_at}`
         )
         .join("\n\n---\n\n");
 
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: systemContent,
-          },
-          {
-            role: "user",
-            content: `User question: ${query}
+      // Prepare messages with conversation history for better context
+      const messages: Array<{
+        role: "system" | "user" | "assistant";
+        content: string;
+      }> = [
+        {
+          role: "system",
+          content: systemContent,
+        },
+      ];
+
+      // Add recent conversation history for context (last 6 messages)
+      const recentHistory = this.conversationHistory.slice(-6);
+      for (const msg of recentHistory) {
+        messages.push({
+          role: msg.role === "user" ? "user" : "assistant",
+          content: msg.message,
+        });
+      }
+
+      // Add current query with search results
+      messages.push({
+        role: "user",
+        content: `User question: ${query}
 
 Knowledge base search results:
 ${searchResults}
 
 Please answer the user's question based on these search results.`,
-          },
-        ],
+      });
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: messages,
       });
 
       return response.choices[0].message.content;
     }
 
     // Default response for other tools
+    const messages: Array<{
+      role: "system" | "user" | "assistant";
+      content: string;
+    }> = [
+      {
+        role: "system",
+        content:
+          "You are a helpful assistant. Generate a natural response based on the tool's result and conversation context.",
+      },
+    ];
+
+    // Add recent conversation history for context (last 6 messages)
+    const recentHistory = this.conversationHistory.slice(-6);
+    for (const msg of recentHistory) {
+      messages.push({
+        role: msg.role === "user" ? "user" : "assistant",
+        content: msg.message,
+      });
+    }
+
+    // Add current query and tool result
+    messages.push({
+      role: "user",
+      content: `Query: ${query}\nTool result: ${JSON.stringify(toolResult)}`,
+    });
+
     const response = await this.openai.chat.completions.create({
       model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful assistant. Generate a natural response based on the tool's result.",
-        },
-        {
-          role: "user",
-          content: `Query: ${query}\nTool result: ${JSON.stringify(
-            toolResult
-          )}`,
-        },
-      ],
+      messages: messages,
     });
 
     return response.choices[0].message.content;
