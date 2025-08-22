@@ -6,6 +6,7 @@ import { ShortestPathController } from "../controllers/graphController";
 import { audioController } from "../controllers/audioController";
 import { ProcessImagesController } from "../controllers/imageController";
 import { imageChatController } from "../controllers/imageChatController";
+import { textController } from "../controllers/textController";
 import { SupabaseKnowledgeBaseService } from "./SupabaseKnowledgeBaseService";
 import path from "path";
 import fs from "fs/promises";
